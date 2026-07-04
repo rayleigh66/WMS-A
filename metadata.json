@@ -1,0 +1,6 @@
+{
+  "name": "Factory WMS",
+  "description": "背包工厂独立仓储管理系统，提供电脑端仓储管理与手机端仓库现场扫码作业的完美闭环原型。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
