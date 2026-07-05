@@ -1364,7 +1364,7 @@ export default function DesktopApp() {
                 <Database className="w-5 h-5 text-emerald-600" /> WMS 物理数据流与 PostgreSQL 库表架构规则
               </h4>
               <p className="text-gray-500 leading-relaxed mb-4">
-                Factory WMS 严格贯彻<b>“流水驱动存货快照”</b>核心事务规则。为了在未来的正式版生产环境（采用 PostgreSQL 数据库）中维持强数据一致性，原型系统已按完全等同的存储过程原理进行了本地模拟设计：
+                Factory WMS 采用流水驱动存货快照模式。系统遵循严格的事务一致性规则：
               </p>
 
               <div className="grid grid-cols-3 gap-4 font-sans text-gray-600">
@@ -1495,7 +1495,7 @@ export default function DesktopApp() {
                   <div>
                     <span className="font-bold text-amber-700 block mb-1">⚠️ 生产过渡提醒</span>
                     <p className="text-gray-500 text-xs leading-relaxed">
-                      当前为零配置 Web 完整原型版本。您可以使用手机扫码枪进行增删，所有库存数据在全局 context 内存及 localState 自动落盘，断开浏览器标签页也不丢失。在未来的正式数据库上线对接中，只需要编写后台服务控制器直连上方的物理库表，前端即可无缝衔接。
+                      当前为零配置 Web 版本。您可以使用手机扫码枪进行增删，所有库存数据在全局 context 内存及 localState 自动落盘，断开浏览器标签页也不丢失。在未来的正式数据库上线对接中，只需要编写后台服务控制器直连上方的物理库表，前端即可无缝衔接。
                     </p>
                   </div>
                   <button 

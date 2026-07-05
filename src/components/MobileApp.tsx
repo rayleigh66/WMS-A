@@ -31,7 +31,6 @@ import {
 } from 'lucide-react';
 import ScanSimulator from './ScanSimulator';
 import { Material, Location, InventorySnapshot, UserRole } from '../types';
-import { getWarehouseName, getLocationName } from '../data/mockData';
 
 export default function MobileApp() {
   const { 

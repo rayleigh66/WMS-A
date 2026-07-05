@@ -16,17 +16,6 @@ import {
   DocumentStatus,
   MovementType
 } from '../types';
-import { 
-  initialMaterials, 
-  initialWarehouses, 
-  initialLocations, 
-  initialInventorySnapshots, 
-  initialMaterialAlerts, 
-  initialStockMovements, 
-  initialDocuments,
-  getWarehouseName,
-  getLocationName
-} from '../data/mockData';
 
 interface WmsContextType {
   materials: Material[];
@@ -93,37 +82,37 @@ export const WmsProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Try to load initial data or persist in local storage
   const [materials, setMaterials] = useState<Material[]>(() => {
     const saved = localStorage.getItem('wms_materials');
-    return saved ? JSON.parse(saved) : initialMaterials;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [snapshots, setSnapshots] = useState<InventorySnapshot[]>(() => {
     const saved = localStorage.getItem('wms_snapshots');
-    return saved ? JSON.parse(saved) : initialInventorySnapshots;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [movements, setMovements] = useState<StockMovement[]>(() => {
     const saved = localStorage.getItem('wms_movements');
-    return saved ? JSON.parse(saved) : initialStockMovements;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [alerts, setAlerts] = useState<MaterialAlert[]>(() => {
     const saved = localStorage.getItem('wms_alerts');
-    return saved ? JSON.parse(saved) : initialMaterialAlerts;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [documents, setDocuments] = useState<WmsDocument[]>(() => {
     const saved = localStorage.getItem('wms_documents');
-    return saved ? JSON.parse(saved) : initialDocuments;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>(() => {
     const saved = localStorage.getItem('wms_warehouses');
-    return saved ? JSON.parse(saved) : initialWarehouses;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [locations, setLocations] = useState<Location[]>(() => {
     const saved = localStorage.getItem('wms_locations');
-    return saved ? JSON.parse(saved) : initialLocations;
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Current session configurations
@@ -705,7 +694,7 @@ export const WmsProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       setAlerts(prev => [newAlert, ...prev]);
 
-      // In this prototype, let's AUTO-APPROVE and apply the snapshot correction immediately so that the physical inventory table reacts instantly! WMS flow is complete.
+      // Auto-approve and apply the snapshot correction immediately
       if (index >= 0) {
         updatedSnapshots[index] = {
           ...updatedSnapshots[index],
