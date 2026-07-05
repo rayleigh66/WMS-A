@@ -1,7 +1,17 @@
-import { IsEnum, IsUUID, IsArray, ValidateNested, IsString, IsNumber, Min, IsOptional, ArrayMinSize } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { StockInType } from '@prisma/client';
+import {
+  IsEnum,
+  IsUUID,
+  IsArray,
+  ValidateNested,
+  IsString,
+  IsNumber,
+  Min,
+  IsOptional,
+  ArrayMinSize,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { StockInType } from "@prisma/client";
 
 export class StockInItemDto {
   @ApiProperty()
@@ -17,7 +27,7 @@ export class StockInItemDto {
   @Min(0.001)
   quantity: number;
 
-  @ApiProperty({ example: '米' })
+  @ApiProperty({ example: "米" })
   @IsString()
   unit: string;
 
@@ -28,7 +38,7 @@ export class StockInItemDto {
 }
 
 export class CreateStockInDto {
-  @ApiProperty({ enum: StockInType, example: 'PURCHASE' })
+  @ApiProperty({ enum: StockInType, example: "PURCHASE" })
   @IsEnum(StockInType)
   type: StockInType;
 

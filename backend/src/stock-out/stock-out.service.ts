@@ -1,7 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { OperationLogsService } from '../operation-logs/operation-logs.service';
-import { CreateStockOutDto } from './dto/create-stock-out.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { OperationLogsService } from "../operation-logs/operation-logs.service";
+import { CreateStockOutDto } from "./dto/create-stock-out.dto";
 
 @Injectable()
 export class StockOutService {
@@ -25,7 +29,9 @@ export class StockOutService {
             },
           },
         },
-        skip, take: pageSize, orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.stockOutOrder.count(),
     ]);
@@ -46,39 +52,49 @@ export class StockOutService {
         },
       },
     });
-    if (!order) throw new NotFoundException('出库单不存在');
+    if (!order) throw new NotFoundException("出库单不存在");
     return order;
   }
 
   async create(dto: CreateStockOutDto, operatorId: string) {
     const items = await this.prisma.item.findMany({
-      where: { id: { in: dto.items.map((i) => i.itemId) }, status: 'ACTIVE', deletedAt: null },
+      where: {
+        id: { in: dto.items.map((i) => i.itemId) },
+        status: "ACTIVE",
+        deletedAt: null,
+      },
     });
-    if (items.length !== dto.items.length) throw new BadRequestException('存在无效或已停用的物料');
+    if (items.length !== dto.items.length)
+      throw new BadRequestException("存在无效或已停用的物料");
 
-    const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
-    if (!warehouse || warehouse.deletedAt) throw new NotFoundException('仓库不存在');
+    const warehouse = await this.prisma.warehouse.findUnique({
+      where: { id: dto.warehouseId },
+    });
+    if (!warehouse || warehouse.deletedAt)
+      throw new NotFoundException("仓库不存在");
 
     const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
     const count = await this.prisma.stockOutOrder.count({
       where: { orderNo: { startsWith: `OUT-${dateStr}` } },
     });
-    const orderNo = `OUT-${dateStr}-${String(count + 1).padStart(4, '0')}`;
+    const orderNo = `OUT-${dateStr}-${String(count + 1).padStart(4, "0")}`;
 
     // Check stock availability first
     for (const item of dto.items) {
       const balance = await this.prisma.inventoryBalance.findUnique({
         where: {
           itemId_warehouseId_locationId: {
-            itemId: item.itemId, warehouseId: dto.warehouseId, locationId: item.locationId,
+            itemId: item.itemId,
+            warehouseId: dto.warehouseId,
+            locationId: item.locationId,
           },
         },
       });
       const available = balance ? Number(balance.quantity) : 0;
       if (available < item.quantity) {
         throw new BadRequestException({
-          message: '库存不足',
+          message: "库存不足",
           itemId: item.itemId,
           availableQuantity: String(available),
           requestedQuantity: String(item.quantity),
@@ -96,7 +112,11 @@ export class StockOutService {
           remark: dto.remark,
           items: {
             create: dto.items.map((i) => ({
-              itemId: i.itemId, locationId: i.locationId, quantity: i.quantity, unit: i.unit, remark: i.remark,
+              itemId: i.itemId,
+              locationId: i.locationId,
+              quantity: i.quantity,
+              unit: i.unit,
+              remark: i.remark,
             })),
           },
         },
@@ -107,7 +127,9 @@ export class StockOutService {
         const balance = await tx.inventoryBalance.findUnique({
           where: {
             itemId_warehouseId_locationId: {
-              itemId: item.itemId, warehouseId: dto.warehouseId, locationId: item.locationId,
+              itemId: item.itemId,
+              warehouseId: dto.warehouseId,
+              locationId: item.locationId,
             },
           },
         });
@@ -116,7 +138,9 @@ export class StockOutService {
         await tx.inventoryBalance.update({
           where: {
             itemId_warehouseId_locationId: {
-              itemId: item.itemId, warehouseId: dto.warehouseId, locationId: item.locationId,
+              itemId: item.itemId,
+              warehouseId: dto.warehouseId,
+              locationId: item.locationId,
             },
           },
           data: { quantity: { decrement: item.quantity } },
@@ -126,14 +150,21 @@ export class StockOutService {
         const movCount = await tx.stockMovement.count({
           where: { movementNo: { startsWith: `MOV-${dateStr}` } },
         });
-        const movementNo = `MOV-${dateStr}-${String(movCount + 1).padStart(4, '0')}`;
+        const movementNo = `MOV-${dateStr}-${String(movCount + 1).padStart(4, "0")}`;
         await tx.stockMovement.create({
           data: {
-            movementNo, itemId: item.itemId, warehouseId: dto.warehouseId, locationId: item.locationId,
-            movementType: 'STOCK_OUT', quantityChange: -Number(item.quantity),
-            quantityBefore: qtyBefore, quantityAfter: qtyAfter,
-            sourceType: 'STOCK_OUT_ORDER', sourceId: order.id, operatorId,
-            remark: `出库(${dto.type}): ${item.remark || ''}`,
+            movementNo,
+            itemId: item.itemId,
+            warehouseId: dto.warehouseId,
+            locationId: item.locationId,
+            movementType: "STOCK_OUT",
+            quantityChange: -Number(item.quantity),
+            quantityBefore: qtyBefore,
+            quantityAfter: qtyAfter,
+            sourceType: "STOCK_OUT_ORDER",
+            sourceId: order.id,
+            operatorId,
+            remark: `出库(${dto.type}): ${item.remark || ""}`,
           },
         });
       }
@@ -142,7 +173,10 @@ export class StockOutService {
     });
 
     await this.operationLogsService.log({
-      userId: operatorId, action: '创建出库单', entityType: 'StockOutOrder', entityId: result.id,
+      userId: operatorId,
+      action: "创建出库单",
+      entityType: "StockOutOrder",
+      entityId: result.id,
       detail: `创建出库单 ${orderNo}，${dto.items.length} 条明细`,
     });
 

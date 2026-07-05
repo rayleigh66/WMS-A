@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class InventoryService {
@@ -14,7 +14,15 @@ export class InventoryService {
     locationId?: string;
     lowStock?: string;
   }) {
-    const { page = 1, pageSize = 20, search, category, warehouseId, locationId, lowStock } = params;
+    const {
+      page = 1,
+      pageSize = 20,
+      search,
+      category,
+      warehouseId,
+      locationId,
+      lowStock,
+    } = params;
     const skip = (page - 1) * pageSize;
 
     const where: any = { quantity: { gt: 0 } };
@@ -32,7 +40,7 @@ export class InventoryService {
     if (category) itemWhere.category = category;
     if (Object.keys(itemWhere).length > 0) where.item = itemWhere;
 
-    if (lowStock === 'true') {
+    if (lowStock === "true") {
       // Items where quantity < safety_stock
       where.item = { ...itemWhere, safetyStock: { gt: 0 } };
       // We'll filter in-memory since Prisma can't compare two fields directly
@@ -42,13 +50,24 @@ export class InventoryService {
       this.prisma.inventoryBalance.findMany({
         where,
         include: {
-          item: { select: { itemCode: true, itemName: true, category: true, specification: true, color: true, unit: true, safetyStock: true, status: true } },
+          item: {
+            select: {
+              itemCode: true,
+              itemName: true,
+              category: true,
+              specification: true,
+              color: true,
+              unit: true,
+              safetyStock: true,
+              status: true,
+            },
+          },
           warehouse: { select: { warehouseCode: true, warehouseName: true } },
           location: { select: { locationCode: true, locationName: true } },
         },
         skip,
         take: pageSize,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
       }),
       this.prisma.inventoryBalance.count({ where }),
     ]);
@@ -74,13 +93,13 @@ export class InventoryService {
       updatedAt: d.updatedAt,
     }));
 
-    if (lowStock === 'true') {
+    if (lowStock === "true") {
       result = result.filter((r) => r.quantity < r.safetyStock);
     }
 
     return {
       data: result.slice(0, pageSize),
-      total: lowStock === 'true' ? result.length : total,
+      total: lowStock === "true" ? result.length : total,
       page,
       pageSize,
     };

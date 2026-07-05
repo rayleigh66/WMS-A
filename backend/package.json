@@ -9,7 +9,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "@nestjs/common": "^11.0.16",
@@ -34,6 +36,7 @@
     "@types/express": "^5.0.1",
     "@types/node": "^22.15.3",
     "@types/passport-jwt": "^4.0.1",
+    "prettier": "^3.9.4",
     "prisma": "^6.19.3",
     "tsx": "^4.19.4",
     "typescript": "~5.5.4"

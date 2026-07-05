@@ -24,8 +24,10 @@ docker compose up -d --build
 
 ## 默认管理员账号
 
-- 账号：admin
-- 密码：通过环境变量 `DEFAULT_ADMIN_PASSWORD` 设置，默认为 `admin123`
+- 邮箱：admin@example.com
+- 默认密码：ChangeMe123!
+
+**生产部署前必须修改 `DEFAULT_ADMIN_EMAIL`、`DEFAULT_ADMIN_PASSWORD`、`JWT_SECRET`。**
 
 ## 修改默认密码
 

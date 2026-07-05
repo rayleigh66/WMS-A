@@ -1,7 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { OperationLogsService } from '../operation-logs/operation-logs.service';
-import { CreateStockInDto } from './dto/create-stock-in.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { OperationLogsService } from "../operation-logs/operation-logs.service";
+import { CreateStockInDto } from "./dto/create-stock-in.dto";
 
 @Injectable()
 export class StockInService {
@@ -28,7 +32,7 @@ export class StockInService {
         },
         skip,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.stockInOrder.count(),
     ]);
@@ -49,41 +53,56 @@ export class StockInService {
         },
       },
     });
-    if (!order) throw new NotFoundException('入库单不存在');
+    if (!order) throw new NotFoundException("入库单不存在");
     return order;
   }
 
   async create(dto: CreateStockInDto, operatorId: string) {
     // Validate items exist and are active
     const items = await this.prisma.item.findMany({
-      where: { id: { in: dto.items.map((i) => i.itemId) }, status: 'ACTIVE', deletedAt: null },
+      where: {
+        id: { in: dto.items.map((i) => i.itemId) },
+        status: "ACTIVE",
+        deletedAt: null,
+      },
     });
     if (items.length !== dto.items.length) {
-      throw new BadRequestException('存在无效或已停用的物料');
+      throw new BadRequestException("存在无效或已停用的物料");
     }
 
     // Validate warehouse
-    const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
-    if (!warehouse || warehouse.deletedAt) throw new NotFoundException('仓库不存在');
+    const warehouse = await this.prisma.warehouse.findUnique({
+      where: { id: dto.warehouseId },
+    });
+    if (!warehouse || warehouse.deletedAt)
+      throw new NotFoundException("仓库不存在");
 
     // Validate locations
     for (const item of dto.items) {
-      const location = await this.prisma.location.findUnique({ where: { id: item.locationId } });
-      if (!location || location.deletedAt || location.warehouseId !== dto.warehouseId) {
-        throw new BadRequestException(`库位 ${item.locationId} 无效或不属于该仓库`);
+      const location = await this.prisma.location.findUnique({
+        where: { id: item.locationId },
+      });
+      if (
+        !location ||
+        location.deletedAt ||
+        location.warehouseId !== dto.warehouseId
+      ) {
+        throw new BadRequestException(
+          `库位 ${item.locationId} 无效或不属于该仓库`,
+        );
       }
       if (item.quantity <= 0) {
-        throw new BadRequestException('数量必须大于0');
+        throw new BadRequestException("数量必须大于0");
       }
     }
 
     // Generate order number
     const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
     const count = await this.prisma.stockInOrder.count({
       where: { orderNo: { startsWith: `IN-${dateStr}` } },
     });
-    const orderNo = `IN-${dateStr}-${String(count + 1).padStart(4, '0')}`;
+    const orderNo = `IN-${dateStr}-${String(count + 1).padStart(4, "0")}`;
 
     // Use transaction for consistency
     const result = await this.prisma.$transaction(async (tx) => {
@@ -134,7 +153,7 @@ export class StockInService {
         const movCount = await tx.stockMovement.count({
           where: { movementNo: { startsWith: `MOV-${dateStr}` } },
         });
-        const movementNo = `MOV-${dateStr}-${String(movCount + 1).padStart(4, '0')}`;
+        const movementNo = `MOV-${dateStr}-${String(movCount + 1).padStart(4, "0")}`;
 
         await tx.stockMovement.create({
           data: {
@@ -142,14 +161,14 @@ export class StockInService {
             itemId: item.itemId,
             warehouseId: dto.warehouseId,
             locationId: item.locationId,
-            movementType: 'STOCK_IN',
+            movementType: "STOCK_IN",
             quantityChange: item.quantity,
             quantityBefore: qtyBefore,
             quantityAfter: qtyAfter,
-            sourceType: 'STOCK_IN_ORDER',
+            sourceType: "STOCK_IN_ORDER",
             sourceId: order.id,
             operatorId,
-            remark: `入库(${dto.type}): ${item.remark || ''}`,
+            remark: `入库(${dto.type}): ${item.remark || ""}`,
           },
         });
       }
@@ -160,8 +179,8 @@ export class StockInService {
     // Log operation
     await this.operationLogsService.log({
       userId: operatorId,
-      action: '创建入库单',
-      entityType: 'StockInOrder',
+      action: "创建入库单",
+      entityType: "StockInOrder",
       entityId: result.id,
       detail: `创建入库单 ${orderNo}，${dto.items.length} 条明细`,
     });

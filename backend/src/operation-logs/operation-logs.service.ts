@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class OperationLogsService {
@@ -22,7 +22,12 @@ export class OperationLogsService {
     }
   }
 
-  async findAll(params: { page?: number; pageSize?: number; action?: string; entityType?: string }) {
+  async findAll(params: {
+    page?: number;
+    pageSize?: number;
+    action?: string;
+    entityType?: string;
+  }) {
     const { page = 1, pageSize = 20, action, entityType } = params;
     const skip = (page - 1) * pageSize;
     const where: any = {};
@@ -33,7 +38,9 @@ export class OperationLogsService {
       this.prisma.operationLog.findMany({
         where,
         include: { user: { select: { name: true, email: true } } },
-        skip, take: pageSize, orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.operationLog.count({ where }),
     ]);

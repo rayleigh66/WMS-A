@@ -1,15 +1,25 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { Role, UserStatus } from '@prisma/client';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
+import * as bcrypt from "bcryptjs";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { Role, UserStatus } from "@prisma/client";
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; pageSize?: number; search?: string; role?: string; status?: string }) {
+  async findAll(params: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    role?: string;
+    status?: string;
+  }) {
     const { page = 1, pageSize = 20, search, role, status } = params;
     const skip = (page - 1) * pageSize;
 
@@ -26,10 +36,18 @@ export class UsersService {
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
-        select: { id: true, email: true, name: true, role: true, department: true, status: true, createdAt: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          department: true,
+          status: true,
+          createdAt: true,
+        },
         skip,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -40,15 +58,25 @@ export class UsersService {
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, name: true, role: true, department: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        department: true,
+        status: true,
+        createdAt: true,
+      },
     });
-    if (!user) throw new NotFoundException('用户不存在');
+    if (!user) throw new NotFoundException("用户不存在");
     return user;
   }
 
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (existing) throw new ConflictException('邮箱已存在');
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (existing) throw new ConflictException("邮箱已存在");
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
@@ -59,14 +87,22 @@ export class UsersService {
         role: dto.role as Role,
         department: dto.department as any,
       },
-      select: { id: true, email: true, name: true, role: true, department: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        department: true,
+        status: true,
+        createdAt: true,
+      },
     });
     return user;
   }
 
   async update(id: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('用户不存在');
+    if (!user) throw new NotFoundException("用户不存在");
 
     const data: any = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -80,13 +116,21 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data,
-      select: { id: true, email: true, name: true, role: true, department: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        department: true,
+        status: true,
+        createdAt: true,
+      },
     });
   }
 
   async remove(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('用户不存在');
+    if (!user) throw new NotFoundException("用户不存在");
     // soft delete
     return this.prisma.user.update({
       where: { id },

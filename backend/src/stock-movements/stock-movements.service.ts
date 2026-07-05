@@ -1,15 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class StockMovementsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(params: {
-    page?: number; pageSize?: number;
-    itemId?: string; warehouseId?: string; locationId?: string;
-    movementType?: string; sourceType?: string;
-    dateFrom?: string; dateTo?: string;
+    page?: number;
+    pageSize?: number;
+    itemId?: string;
+    warehouseId?: string;
+    locationId?: string;
+    movementType?: string;
+    sourceType?: string;
+    dateFrom?: string;
+    dateTo?: string;
   }) {
     const { page = 1, pageSize = 20 } = params;
     const skip = (page - 1) * pageSize;
@@ -35,7 +40,9 @@ export class StockMovementsService {
           location: { select: { locationCode: true, locationName: true } },
           operator: { select: { name: true } },
         },
-        skip, take: pageSize, orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.stockMovement.count({ where }),
     ]);
@@ -46,7 +53,10 @@ export class StockMovementsService {
     return this.prisma.stockMovement.findUnique({
       where: { id },
       include: {
-        item: true, warehouse: true, location: true, operator: { select: { name: true } },
+        item: true,
+        warehouse: true,
+        location: true,
+        operator: { select: { name: true } },
       },
     });
   }

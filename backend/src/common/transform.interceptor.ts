@@ -1,5 +1,10 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
-import { Observable, map } from 'rxjs';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from "@nestjs/common";
+import { Observable, map } from "rxjs";
 
 @Injectable()
 export class TransformInterceptor implements NestInterceptor {
@@ -7,7 +12,12 @@ export class TransformInterceptor implements NestInterceptor {
     return next.handle().pipe(
       map((data) => {
         // handle paginated responses
-        if (data && typeof data === 'object' && 'data' in data && 'total' in data) {
+        if (
+          data &&
+          typeof data === "object" &&
+          "data" in data &&
+          "total" in data
+        ) {
           return data;
         }
         return data;
