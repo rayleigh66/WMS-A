@@ -26,7 +26,8 @@ import {
   Truck,
   Scan,
   Smartphone,
-  ShieldCheck
+  ShieldCheck,
+  Warehouse
 } from 'lucide-react';
 import ScanSimulator from './ScanSimulator';
 import { Material, Location, InventorySnapshot, UserRole } from '../types';
@@ -79,12 +80,12 @@ export default function MobileApp() {
   const [outType, setOutType] = useState<'生产领料' | '样品领料' | '报废出库' | '盘亏出库' | '其他出库'>('生产领料');
   const [outDepartment, setOutDepartment] = useState('裁床');
   
-  const [quantity, setQuantity] = useState(10);
+  const [quantity, setQuantity] = useState<number | string>(10);
   const [remark, setRemark] = useState('');
 
   // Physical counting form states
   const [countedSnapshot, setCountedSnapshot] = useState<InventorySnapshot | null>(null);
-  const [realCountQty, setRealCountQty] = useState(0);
+  const [realCountQty, setRealCountQty] = useState<number | string>(0);
   const [countReason, setCountReason] = useState('上次漏扫');
 
   // Success screen display data
@@ -157,7 +158,7 @@ export default function MobileApp() {
       warehouseCode: currentWarehouseCode,
       locationCode: selectedLocation.location_code,
       batchNo: selectedBatch,
-      quantity: quantity,
+      quantity: Number(quantity),
       remark: remark,
       operator: operatorName
     });
@@ -167,7 +168,7 @@ export default function MobileApp() {
         movementNo: result.movementNo,
         materialName: selectedMaterial.material_name,
         prevQty: result.prevQty,
-        changeQty: quantity,
+        changeQty: Number(quantity),
         newQty: result.newQty,
         locationCode: selectedLocation.location_code
       });
@@ -189,7 +190,7 @@ export default function MobileApp() {
       warehouseCode: currentWarehouseCode,
       locationCode: selectedLocation.location_code,
       batchNo: selectedBatch,
-      quantity: quantity,
+      quantity: Number(quantity),
       remark: remark,
       operator: operatorName,
       forceManagerApproval: forceBypass
@@ -200,7 +201,7 @@ export default function MobileApp() {
         movementNo: result.movementNo,
         materialName: selectedMaterial.material_name,
         prevQty: result.prevQty,
-        changeQty: -quantity,
+        changeQty: -Number(quantity),
         newQty: result.newQty,
         locationCode: selectedLocation.location_code
       });
@@ -222,8 +223,8 @@ export default function MobileApp() {
       locationCode: countedSnapshot.location_code,
       batchNo: countedSnapshot.batch_no,
       bookQty: countedSnapshot.physical_qty,
-      realQty: realCountQty,
-      reason: realCountQty !== countedSnapshot.physical_qty ? countReason : '',
+      realQty: Number(realCountQty),
+      reason: Number(realCountQty) !== countedSnapshot.physical_qty ? countReason : '',
       remark: '手机现场快速盘点',
       operator: operatorName
     });
@@ -233,8 +234,8 @@ export default function MobileApp() {
         movementNo: result.movementNo || 'N/A',
         materialName: countedSnapshot.material_name,
         prevQty: countedSnapshot.physical_qty,
-        changeQty: realCountQty - countedSnapshot.physical_qty,
-        newQty: realCountQty,
+        changeQty: Number(realCountQty) - countedSnapshot.physical_qty,
+        newQty: Number(realCountQty),
         locationCode: countedSnapshot.location_code
       });
       setFlowStep(5); // Show success
@@ -245,11 +246,11 @@ export default function MobileApp() {
 
   // Helper Quick Adjustment Buttons for quantities
   const adjustQty = (amount: number) => {
-    setQuantity(prev => Math.max(1, prev + amount));
+    setQuantity(prev => { const num = Number(prev) || 0; return Math.max(1, Number((num + amount).toFixed(2))); });
   };
 
   const adjustRealCountQty = (amount: number) => {
-    setRealCountQty(prev => Math.max(0, prev + amount));
+    setRealCountQty(prev => { const num = Number(prev) || 0; return Math.max(0, Number((num + amount).toFixed(2))); });
   };
 
   // Filter logs for logs page (recent scanned items)
@@ -280,16 +281,15 @@ export default function MobileApp() {
             {activeTab === 'home' && (
               <div className="flex-1 flex flex-col justify-between space-y-6 py-2">
                 {/* Header Welcome Card */}
-                <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-4 text-white shadow-md flex items-center justify-between">
+                <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-5 text-white shadow-md flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-sm text-slate-300">作业员：张仓管</h3>
-                    <p className="text-[10px] text-slate-400 mt-0.5">工厂仓现场高效理货工具端</p>
-                    <div className="flex items-center gap-1.5 mt-2 text-xs bg-slate-850 px-2 py-1 rounded-md w-fit">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span className="text-emerald-400 font-mono text-[10px]">WMS 离线直连 (Postgres-Sync ready)</span>
+                    <h2 className="text-xl font-bold tracking-wider mb-2">Factory WMS</h2>
+                    <div className="space-y-1 mt-3">
+                      <h3 className="font-semibold text-sm text-slate-300 flex items-center gap-1.5"><Warehouse className="w-4 h-4"/> 原材料仓</h3>
+                      <h3 className="font-semibold text-sm text-slate-300 flex items-center gap-1.5"><User className="w-4 h-4"/> 张仓管</h3>
                     </div>
                   </div>
-                  <Package className="w-10 h-10 text-slate-700 stroke-[1.5]" />
+                  <Package className="w-12 h-12 text-slate-700 stroke-[1.5] mr-2" />
                 </div>
 
                 {/* The 3 Giant Buttons requested by the user */}
@@ -362,28 +362,31 @@ export default function MobileApp() {
                   </button>
 
                   {/* 4. 扫码查库存 (Auxiliary Entry) */}
-                  <button
-                    onClick={() => {
-                      setActiveTab('check_stock');
-                      startScanning('all', (val) => {
-                        handleCheckStockCode(val);
-                      });
-                    }}
-                    className="w-full py-4 px-5 bg-slate-800 hover:bg-slate-750 active:scale-[0.98] transition-all rounded-2xl text-white flex items-center justify-between shadow-md hover:shadow-lg group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4 text-left">
-                      <div className="p-2.5 bg-slate-750 rounded-xl group-hover:scale-110 transition-transform">
-                        <Scan className="w-6 h-6 text-emerald-400" />
+                  <div className="pt-2">
+                    <span className="block text-xs font-bold text-gray-500 mb-3 px-1 uppercase tracking-wider">辅助功能</span>
+                    <button
+                      onClick={() => {
+                        setActiveTab('check_stock');
+                        startScanning('all', (val) => {
+                          handleCheckStockCode(val);
+                        });
+                      }}
+                      className="w-full py-4 px-5 bg-white border border-gray-200 active:bg-gray-50 active:scale-[0.98] transition-all rounded-2xl text-gray-800 flex items-center justify-between shadow-sm hover:shadow-md group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4 text-left">
+                        <div className="p-2.5 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                          <Scan className="w-6 h-6 text-emerald-600" />
+                        </div>
+                        <div>
+                          <span className="block text-sm font-bold">查库存</span>
+                          <span className="text-[11px] text-gray-500 font-medium">快捷查询物料可用量、分库位明细及预警</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="block text-sm font-bold">4. 扫码查库存</span>
-                        <span className="text-[11px] text-slate-300 font-medium">快捷查询物料可用量、分库位明细及预警</span>
+                      <div className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
+                        <QrCode className="w-4 h-4 text-emerald-600" />
                       </div>
-                    </div>
-                    <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center">
-                      <QrCode className="w-4 h-4 text-emerald-300" />
-                    </div>
-                  </button>
+                    </button>
+                  </div>
 
                 </div>
 
@@ -402,14 +405,14 @@ export default function MobileApp() {
               </div>
             )}
 
-            {/* Tab: CHECK_STOCK (只读扫码查库存) */}
+            {/* Tab: CHECK_STOCK */}
             {activeTab === 'check_stock' && (
               <div className="flex-1 flex flex-col space-y-4">
                 {/* Header section */}
                 <div className="flex justify-between items-center pb-2 border-b border-gray-200">
                   <h3 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
                     <Scan className="w-4 h-4 text-emerald-600" />
-                    现场只读扫码查库存
+                    扫码查库存
                   </h3>
                   <button
                     onClick={() => {
@@ -1106,7 +1109,7 @@ export default function MobileApp() {
                           <input
                             type="number"
                             value={quantity}
-                            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 0))}
+                            onChange={(e) => setQuantity(e.target.value)} step="0.01"
                             className="w-24 text-3xl font-black text-slate-800 text-center border-b-2 border-slate-300 focus:border-emerald-500 focus:outline-none"
                           />
 
@@ -1286,7 +1289,7 @@ export default function MobileApp() {
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1.5">领用用途或车间部门</label>
                       <div className="grid grid-cols-3 gap-2 text-[11px]">
-                        {['裁床', '车缝', '包装', '样品室', '外发', '其他'].map((dept) => (
+                        {['裁床', '车缝', '包装', '研发样品仓', '外发', '其他'].map((dept) => (
                           <button
                             key={dept}
                             onClick={() => setOutDepartment(dept)}
@@ -1345,7 +1348,7 @@ export default function MobileApp() {
                         // Get stock in this bin
                         const snapItem = snapshots.find(s => s.material_code === selectedMaterial.material_code && s.location_code === selectedLocation.location_code && s.warehouse_code === currentWarehouseCode);
                         const availableQty = snapItem ? snapItem.available_qty : 0;
-                        const gap = quantity - availableQty;
+                        const gap = Number(quantity) - availableQty;
                         const isOver = gap > 0;
 
                         return (
@@ -1372,7 +1375,7 @@ export default function MobileApp() {
                                 <input
                                   type="number"
                                   value={quantity}
-                                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 0))}
+                                  onChange={(e) => setQuantity(e.target.value)} step="0.01"
                                   className="w-24 text-3xl font-black text-slate-800 text-center border-b-2 border-slate-300 focus:border-sky-500 focus:outline-none"
                                 />
 
@@ -1397,7 +1400,7 @@ export default function MobileApp() {
                               </div>
 
                               <div className="text-[11px] text-slate-400 mt-3 font-mono">
-                                本次出库后预计剩余库存: <strong className={isOver ? 'text-red-500 font-bold' : 'text-slate-600 font-bold'}>{isOver ? 0 : availableQty - quantity}</strong> {selectedMaterial.unit}
+                                本次出库后预计剩余库存: <strong className={isOver ? 'text-red-500 font-bold' : 'text-slate-600 font-bold'}>{isOver ? 0 : availableQty - Number(quantity)}</strong> {selectedMaterial.unit}
                               </div>
                             </div>
 
@@ -1645,7 +1648,7 @@ export default function MobileApp() {
                           <input
                             type="number"
                             value={realCountQty}
-                            onChange={(e) => setRealCountQty(Math.max(0, parseInt(e.target.value) || 0))}
+                            onChange={(e) => setRealCountQty(e.target.value)} step="0.01"
                             className="w-24 text-3xl font-black text-slate-800 text-center border-b-2 border-slate-300 focus:border-purple-500 focus:outline-none"
                           />
 
@@ -1679,7 +1682,7 @@ export default function MobileApp() {
 
                       {/* Display difference instantly */}
                       {(() => {
-                        const diff = realCountQty - countedSnapshot.physical_qty;
+                        const diff = Number(realCountQty) - countedSnapshot.physical_qty;
                         if (diff !== 0) {
                           return (
                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs space-y-2">
@@ -1792,32 +1795,15 @@ export default function MobileApp() {
 
       {/* Simplified Mobile Bottom Tab Navigation */}
       {activeFlow === null && (
-        <div className="bg-white border-t border-slate-200 grid grid-cols-4 text-center py-2 text-slate-500 select-none shadow-sm font-medium">
+        <div className="bg-white border-t border-slate-200 grid grid-cols-3 text-center py-2 text-slate-500 select-none shadow-sm font-medium">
           <button
             onClick={() => setActiveTab('home')}
             className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
-              activeTab === 'home' ? 'text-emerald-600' : 'hover:text-slate-800'
+              activeTab === 'home' || activeTab === 'check_stock' ? 'text-emerald-600' : 'hover:text-slate-800'
             }`}
           >
             <Home className="w-5 h-5" />
             <span className="text-[10px]">首页</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('check_stock');
-              // Clear previous selection on entering tab afresh if they click again
-              if (activeTab === 'check_stock') {
-                setCheckedMaterial(null);
-                setCheckedLocation(null);
-              }
-            }}
-            className={`flex flex-col items-center gap-0.5 py-1 transition-colors cursor-pointer ${
-              activeTab === 'check_stock' ? 'text-emerald-600' : 'hover:text-slate-800'
-            }`}
-          >
-            <Scan className="w-5 h-5" />
-            <span className="text-[10px]">查库存</span>
           </button>
           
           <button
@@ -1827,7 +1813,7 @@ export default function MobileApp() {
             }`}
           >
             <History className="w-5 h-5" />
-            <span className="text-[10px]">扫码记录</span>
+            <span className="text-[10px]">记录</span>
           </button>
           
           <button

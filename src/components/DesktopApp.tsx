@@ -38,7 +38,8 @@ import {
   ShieldAlert,
   Save,
   Check,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { Material, InventorySnapshot, StockMovement, MaterialAlert, WmsDocument } from '../types';
 
@@ -151,36 +152,35 @@ export default function DesktopApp() {
   };
 
   return (
-    <div className="flex-1 flex bg-white min-h-[700px] text-gray-800 rounded-3xl overflow-hidden shadow-xl border border-gray-200 font-sans">
+    <div className="flex-1 flex bg-white/95 min-h-[700px] text-gray-800 rounded-3xl overflow-hidden shadow-2xl border border-gray-200/60 font-sans backdrop-blur-xl">
       
       {/* 1. Side Navigation Menu */}
-      <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col justify-between py-6">
+      <div className="w-64 bg-gray-50/80 border-r border-gray-200/60 flex flex-col justify-between py-6 backdrop-blur-md z-10">
         <div>
           {/* Logo Brand */}
           <div className="px-6 mb-8 flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#1a3a3a] rounded-xl flex items-center justify-center text-white font-extrabold shadow-sm">
-              W
+            <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl flex items-center justify-center text-white font-extrabold shadow-md ring-1 ring-gray-900/10">
+              <span className="bg-clip-text text-transparent bg-gradient-to-br from-emerald-400 to-teal-200 text-lg">W</span>
             </div>
             <div>
               <span className="block font-black text-sm text-gray-800 tracking-wider">FACTORY WMS</span>
-              <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">背包工厂独立仓管</span>
+              <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">背包工厂独立仓管</span>
             </div>
           </div>
 
           {/* Nav Links */}
-          <nav className="space-y-1 px-3">
+          <nav className="space-y-1.5 px-3">
             {[
               { id: 'dashboard', label: '控制中心', icon: LayoutDashboard },
               { id: 'materials', label: '物料主数据', icon: Package },
-              { id: 'snapshots', label: '实时库存表', icon: Warehouse },
+              { id: 'snapshots', label: '实时库存', icon: Warehouse },
               { id: 'inbound', label: '入库管理', icon: ArrowDownLeft, badge: documents.filter(d => d.document_type === '入库单' && d.status === '待审核').length },
               { id: 'outbound', label: '出库管理', icon: ArrowUpRight },
               { id: 'counting', label: '盘点管理', icon: FileCheck, badge: documents.filter(d => d.document_type === '盘点单' && d.status === '待审核').length },
               { id: 'ledger', label: '出入库流水', icon: History },
               { id: 'alerts', label: '物料预警表', icon: AlertOctagon, badge: activeAlertsCount },
               { id: 'reports', label: '报表中心', icon: BarChart3 },
-              { id: 'integration', label: '系统集成 Postgres', icon: Cpu },
-              { id: 'settings', label: '基础设置', icon: Settings },
+              { id: 'settings', label: '系统设置 / 集成', icon: Settings },
             ].map(item => {
               const Icon = item.icon;
               const active = activeMenu === item.id;
@@ -191,18 +191,20 @@ export default function DesktopApp() {
                     setActiveMenu(item.id as any);
                     setSelectedMatCode(null);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  className={`group w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 cursor-pointer whitespace-nowrap overflow-hidden ${
                     active 
-                      ? 'bg-emerald-50 text-emerald-700 border-r-4 border-emerald-600 font-bold' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-600/20 translate-x-1 ring-1 ring-emerald-500/50' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:translate-x-0.5 border border-transparent hover:border-gray-200'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${active ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-900'}`} />
+                    <Icon className={`w-4 h-4 shrink-0 transition-colors duration-300 ${active ? 'text-white' : 'text-gray-400 group-hover:text-emerald-500'}`} />
                     <span>{item.label}</span>
                   </div>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full text-[9px] font-bold border border-red-100">
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border shrink-0 transition-colors ${
+                      active ? 'bg-white/20 text-white border-white/30' : 'bg-red-50 text-red-600 border-red-200'
+                    }`}>
                       {item.badge}
                     </span>
                   )}
@@ -221,7 +223,7 @@ export default function DesktopApp() {
                 {currentUserRole[0]}
               </div>
               <div>
-                <span className="block text-[11px] font-bold text-gray-700">{currentUserRole === 'Admin' ? '超级管理员' : currentUserRole === 'Warehouse Manager' ? '仓库主管' : currentUserRole === 'Finance' ? '财务核算' : '计划/采购员'}</span>
+                <span className="block text-xs font-bold text-gray-700">{currentUserRole === 'Admin' ? '超级管理员' : currentUserRole === 'Warehouse Manager' ? '仓库主管' : currentUserRole === 'Finance' ? '财务核算' : '计划/采购员'}</span>
                 <select
                   value={currentUserRole}
                   onChange={(e) => setCurrentUserRole(e.target.value as any)}
@@ -250,15 +252,14 @@ export default function DesktopApp() {
             <h2 className="text-xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
               {activeMenu === 'dashboard' && '控制中心 Dashboard'}
               {activeMenu === 'materials' && '物料主数据 Materials'}
-              {activeMenu === 'snapshots' && '实时物理库存表 Inventory Snapshot'}
+              {activeMenu === 'snapshots' && '实时库存'}
               {activeMenu === 'inbound' && '入库单管理 Inbound Orders'}
               {activeMenu === 'outbound' && '出库单管理 Outbound Orders'}
               {activeMenu === 'counting' && '盘点差异管理 Stock Counting'}
               {activeMenu === 'ledger' && '出入库流水日志 Ledger'}
               {activeMenu === 'alerts' && '物料异常预警中心 Alerts'}
               {activeMenu === 'reports' && '统计报表中心 Analytics'}
-              {activeMenu === 'integration' && 'PostgreSQL 数据库集成集成板'}
-              {activeMenu === 'settings' && '系统物理基础设置 Settings'}
+              {activeMenu === 'settings' && '系统设置 / 集成配置'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
               {activeMenu === 'dashboard' && '实时汇总工厂实物流水，自动化核对各工段安全阈值'}
@@ -270,8 +271,7 @@ export default function DesktopApp() {
               {activeMenu === 'ledger' && '不可删除的库存异动流转明细账，为财务提供穿透式追溯'}
               {activeMenu === 'alerts' && '缺货、安全警戒线触发、盘点大差异、负库存风险一网打尽'}
               {activeMenu === 'reports' && '图形化呈现原材料库位饱和度，物料最快消耗排序列报'}
-              {activeMenu === 'integration' && 'WMS 与外部 ERP、PMS、MES 系统只读互通及 PostgreSQL 设计架构模型'}
-              {activeMenu === 'settings' && '维护仓库分区、添加或启用货区架位，配置扫码枪匹配条码规则'}
+              {activeMenu === 'settings' && '维护仓库分区、添加或启用货区架位，配置扫码枪匹配条码规则及系统集成'}
             </p>
           </div>
 
@@ -318,53 +318,66 @@ export default function DesktopApp() {
             {/* 1. Statistics Cards */}
             <div className="grid grid-cols-4 gap-4">
               
-              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-                <div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">物料主数据 SKU</span>
-                  <span className="text-2xl font-extrabold text-gray-800 tracking-tight block mt-1">{totalSkus}</span>
-                  <span className="text-[10px] text-gray-400 mt-1.5 block">面料拉链等 8 大类目注册</span>
+              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center shadow-sm group">
+                <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 shadow-sm shrink-0 mr-3 transition-transform group-hover:scale-105">
+                  <Package className="w-5 h-5" />
                 </div>
-                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 shadow-sm">
-                  <Package className="w-6 h-6" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate block">物料主数据</span>
+                    <HelpCircle className="w-3 h-3 text-gray-300 hover:text-gray-500 cursor-help shrink-0" title="系统中已注册的面料、拉链等各类物料SKU总数" />
+                  </div>
+                  <span className="text-xl font-extrabold text-gray-800 tracking-tight block mt-0.5 truncate">{totalSkus}</span>
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-                <div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">物理仓库总库存</span>
-                  <span className="text-2xl font-extrabold text-gray-800 tracking-tight block mt-1">
-                    {totalPhysicalQty.toLocaleString()} <span className="text-xs text-gray-400 font-medium">米/个</span>
+              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center shadow-sm group">
+                <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shadow-sm shrink-0 mr-3 transition-transform group-hover:scale-105">
+                  <RefreshCw className="w-5 h-5 animate-spin-slow" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate block">仓库总库存</span>
+                    <HelpCircle className="w-3 h-3 text-gray-300 hover:text-gray-500 cursor-help shrink-0" title={`今日入库: +${todayInboundCount} | 出库: -${todayOutboundCount}`} />
+                  </div>
+                  <span className="text-xl font-extrabold text-gray-800 tracking-tight block mt-0.5 truncate">
+                    {totalPhysicalQty.toLocaleString()} <span className="text-[10px] text-gray-400 font-medium">件/米/码</span>
                   </span>
-                  <span className="text-[10px] text-gray-400 mt-1.5 block">今日入库: +{todayInboundCount} | 出库: -{todayOutboundCount}</span>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-xl text-blue-600 shadow-sm">
-                  <RefreshCw className="w-6 h-6 animate-spin-slow" />
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-                <div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">模拟存货估值 (¥)</span>
-                  <span className="text-2xl font-extrabold text-amber-600 tracking-tight block mt-1">
+              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center shadow-sm group">
+                <div className="p-2.5 bg-amber-50 rounded-xl text-amber-600 shadow-sm shrink-0 mr-3 transition-transform group-hover:scale-105">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate block">存货估值</span>
+                    <HelpCircle className="w-3 h-3 text-gray-300 hover:text-gray-500 cursor-help shrink-0" title="根据各物料单价及当前库存数量加权计算出的存货总金额" />
+                  </div>
+                  <span className="text-xl font-extrabold text-amber-600 tracking-tight block mt-0.5 truncate">
                     ¥{totalValueValuation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-[10px] text-gray-400 mt-1.5 block">由各物料单价及库存数加权</span>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-xl text-amber-600 shadow-sm">
-                  <DollarSign className="w-6 h-6" />
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-                <div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">未处理异常警报</span>
-                  <span className="text-2xl font-extrabold text-red-600 tracking-tight block mt-1">{activeAlertsCount}</span>
-                  <span className="text-[10px] text-red-600 font-medium bg-red-50 px-1.5 py-0.5 mt-1 block rounded-md w-fit border border-red-100">
-                    低库存: {lowStockCount} | 严重缺货: {oosCount}
-                  </span>
+              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex items-center shadow-sm group">
+                <div className="p-2.5 bg-red-50 rounded-xl text-red-600 shadow-sm shrink-0 mr-3 transition-transform group-hover:scale-105">
+                  <AlertOctagon className="w-5 h-5" />
                 </div>
-                <div className="p-3 bg-red-50 rounded-xl text-red-600 shadow-sm">
-                  <AlertOctagon className="w-6 h-6" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate block">未处理异常</span>
+                    <HelpCircle className="w-3 h-3 text-gray-300 hover:text-gray-500 cursor-help shrink-0" title={`低库存警告: ${lowStockCount} | 严重缺货: ${oosCount}`} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xl font-extrabold text-red-600 tracking-tight block truncate">{activeAlertsCount}</span>
+                    {activeAlertsCount > 0 && (
+                      <span className="text-[9px] text-red-600 font-medium bg-red-50 px-1.5 py-0.5 rounded border border-red-200 truncate flex-1">
+                        待处理
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -419,7 +432,7 @@ export default function DesktopApp() {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-3 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4 text-red-600" /> 低库存及缺货异常监视
                   </h4>
-                  <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
+                  <p className="text-xs text-gray-400 mb-3 leading-relaxed">
                     系统在手机现场出库、盘点动作完结后，会秒级校对该 SKU 在所有仓位总和与安全库存的差值，并在此触发告警。
                   </p>
 
@@ -428,8 +441,8 @@ export default function DesktopApp() {
                       <div key={a.alert_no} className="bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-xs">
                         <div className="flex justify-between items-center mb-1">
                           <span className="font-bold text-gray-700">{a.material_code}</span>
-                          <span className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold ${
-                            a.alert_type === '缺货' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                          <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${
+                            a.alert_type === '缺货' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-600 border border-amber-200'
                           }`}>
                             {a.alert_type}
                           </span>
@@ -445,7 +458,7 @@ export default function DesktopApp() {
 
                 <button
                   onClick={() => setActiveMenu('alerts')}
-                  className="w-full py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-center text-[11px] font-bold transition-all mt-4 text-emerald-700 cursor-pointer shadow-sm"
+                  className="w-full py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-center text-xs font-bold transition-all mt-4 text-emerald-700 cursor-pointer shadow-sm"
                 >
                   查看全部预警表记录 →
                 </button>
@@ -474,11 +487,11 @@ export default function DesktopApp() {
                     </thead>
                     <tbody className="divide-y divide-gray-100 font-mono">
                       {movements.slice(0, 5).map(m => (
-                        <tr key={m.movement_no} className="hover:bg-gray-50/50 text-[11px] transition-all">
+                        <tr key={m.movement_no} className="hover:bg-gray-50/50 text-xs transition-all">
                           <td className="py-2 text-gray-400">{m.movement_no}</td>
                           <td className="py-2 font-sans">
-                            <span className={`px-1.5 py-0.5 rounded-sm font-semibold text-[10px] ${
-                              m.movement_type.includes('入库') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                            <span className={`px-1.5 py-0.5 rounded-md font-semibold text-[10px] ${
+                              m.movement_type.includes('入库') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}>
                               {m.movement_type}
                             </span>
@@ -501,7 +514,7 @@ export default function DesktopApp() {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-3 flex items-center gap-1.5">
                   <UserCheck className="w-4 h-4 text-emerald-600" /> 主管待审批事务
                 </h4>
-                <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">
+                <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                   需要仓库主管、财务或者PMC审批的补货及差异核销明细。
                 </p>
 
@@ -596,11 +609,11 @@ export default function DesktopApp() {
                   <table className="w-full text-left">
                     <thead className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">
                       <tr>
-                        <th className="p-3">物料编号</th>
-                        <th className="p-3">物料图</th>
-                        <th className="p-3">物料名称</th>
-                        <th className="p-3">类别</th>
-                        <th className="p-3">规格规格</th>
+                        <th className="py-3 px-4">物料编号</th>
+                        <th className="py-3 px-4">物料图</th>
+                        <th className="py-3 px-4">物料名称</th>
+                        <th className="py-3 px-4">类别</th>
+                        <th className="py-3 px-4">规格规格</th>
                         <th className="p-3 font-mono">安全库存</th>
                         <th className="p-3 text-right">默认供应商</th>
                       </tr>
@@ -622,12 +635,12 @@ export default function DesktopApp() {
                             }`}
                           >
                             <td className="p-3 font-mono font-bold text-emerald-600">{m.material_code}</td>
-                            <td className="p-3">
+                            <td className="py-3 px-4">
                               <img src={m.image} className="w-9 h-9 rounded-md object-cover bg-white border border-gray-100" alt="img" />
                             </td>
                             <td className="p-3 font-semibold text-gray-800">{m.material_name}</td>
-                            <td className="p-3">
-                              <span className="bg-gray-50 px-2 py-1 rounded-sm text-[10px] border border-gray-100 font-semibold text-gray-600">
+                            <td className="py-3 px-4">
+                              <span className="bg-gray-50 px-2 py-1 rounded-md text-[10px] border border-gray-100 font-semibold text-gray-600">
                                 {m.category}
                               </span>
                             </td>
@@ -660,30 +673,30 @@ export default function DesktopApp() {
 
                         {/* Detailed Key-Values */}
                         <div className="space-y-2 font-sans">
-                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-[11px]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-xs">
                             <span className="text-gray-400">颜色代码:</span>
                             <span className="font-semibold text-gray-700 flex items-center gap-1">
                               <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: m.color_code }}></span>
                               {m.color} ({m.color_code})
                             </span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-[11px]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-xs">
                             <span className="text-gray-400">单位换算:</span>
                             <span className="font-semibold text-gray-700 font-mono">{m.conversion_rate}</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-[11px]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-xs">
                             <span className="text-gray-400">安全库存限额:</span>
                             <span className="font-semibold text-amber-600 font-mono">{m.safety_stock} {m.unit}</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-[11px]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-xs">
                             <span className="text-gray-400">最小采购MOQ:</span>
                             <span className="font-semibold text-gray-700 font-mono">{m.min_order_qty} {m.unit}</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-[11px]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-xs">
                             <span className="text-gray-400">采购交期:</span>
                             <span className="font-semibold text-gray-700 font-mono">{m.lead_time_days} 天</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-[11px]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1.5 text-xs">
                             <span className="text-gray-400">默认供应商:</span>
                             <span className="font-semibold text-gray-700 text-right truncate max-w-[150px]">{m.supplier}</span>
                           </div>
@@ -695,7 +708,7 @@ export default function DesktopApp() {
                           
                           <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
                             {matchedSnaps.map(snap => (
-                              <div key={snap.id} className="flex justify-between items-center text-[11px] font-mono border-b border-gray-100 pb-1">
+                              <div key={snap.id} className="flex justify-between items-center text-xs font-mono border-b border-gray-100 pb-1">
                                 <span className="text-gray-500">{snap.warehouse_name} • <strong className="text-amber-600">{snap.location_code}</strong></span>
                                 <span className="font-bold text-gray-700">{snap.physical_qty} {snap.unit}</span>
                               </div>
@@ -756,7 +769,7 @@ export default function DesktopApp() {
                 <span className="text-gray-700 font-bold">实存物料快照 ({snapshots.length} 条物理位置分布)</span>
                 <button 
                   onClick={() => alert('WMS 物理库存快照已生成。Excel 导出成功！ (Mock Export)')}
-                  className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg flex items-center gap-1.5 cursor-pointer text-[11px] shadow-sm"
+                  className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg flex items-center gap-1.5 cursor-pointer text-xs shadow-sm"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> 导出 WMS 物理库存表
                 </button>
@@ -766,15 +779,15 @@ export default function DesktopApp() {
                 <table className="w-full text-left">
                   <thead className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">
                     <tr>
-                      <th className="p-3">物料SKU</th>
-                      <th className="p-3">名称</th>
-                      <th className="p-3">所属仓库</th>
-                      <th className="p-3">通道库位</th>
-                      <th className="p-3">物理批次号</th>
+                      <th className="py-3 px-4">物料SKU</th>
+                      <th className="py-3 px-4">名称</th>
+                      <th className="py-3 px-4">所属仓库</th>
+                      <th className="py-3 px-4">通道库位</th>
+                      <th className="py-3 px-4">物理批次号</th>
                       <th className="p-3 font-mono">账面实存</th>
                       <th className="p-3 font-mono">可用额</th>
                       <th className="p-3 font-mono">分配锁定</th>
-                      <th className="p-3">库存状态</th>
+                      <th className="py-3 px-4">库存状态</th>
                       <th className="p-3 text-right">最近盘点时间</th>
                     </tr>
                   </thead>
@@ -791,16 +804,16 @@ export default function DesktopApp() {
                           <td className="p-3 font-sans text-gray-800 font-semibold">{s.material_name}</td>
                           <td className="p-3 font-sans text-gray-500">{s.warehouse_name}</td>
                           <td className="p-3 font-bold text-amber-600">{s.location_code}</td>
-                          <td className="p-3 text-gray-400 text-[11px]">{s.batch_no}</td>
+                          <td className="p-3 text-gray-400 text-xs">{s.batch_no}</td>
                           <td className="p-3 font-black text-gray-700">{s.physical_qty} {s.unit}</td>
                           <td className="p-3 font-semibold text-gray-600">{s.available_qty} {s.unit}</td>
                           <td className="p-3 text-gray-400">{s.reserved_qty} {s.unit}</td>
                           <td className="p-3 font-sans">
-                            <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${
-                              s.stock_status === '正常' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                              s.stock_status === '低库存' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                              s.stock_status === '缺货' ? 'bg-red-50 text-red-700 border border-red-100 animate-pulse' :
-                              'bg-red-50 text-red-700 border border-red-100'
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              s.stock_status === '正常' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                              s.stock_status === '低库存' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                              s.stock_status === '缺货' ? 'bg-red-50 text-red-700 border border-red-200 animate-pulse' :
+                              'bg-red-50 text-red-700 border border-red-200'
                             }`}>
                               {s.stock_status}
                             </span>
@@ -831,12 +844,12 @@ export default function DesktopApp() {
                       <span className="font-extrabold text-sm text-gray-800">{doc.document_no}</span>
                       <span className="px-2 py-0.5 rounded bg-gray-50 text-gray-500 text-[10px] font-mono border border-gray-200">{doc.sub_type}</span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${getDocStatusStyles(doc.status)}`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${getDocStatusStyles(doc.status)}`}>
                       {doc.status}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4 text-[11px] text-gray-400 mb-3 font-mono">
+                  <div className="grid grid-cols-4 gap-4 text-xs text-gray-400 mb-3 font-mono">
                     <div>物理仓库: <strong className="text-gray-700 font-sans">{doc.warehouse_code}</strong></div>
                     <div>录入员: <strong className="text-gray-700 font-sans">{doc.creator}</strong></div>
                     <div>递交时间: <strong className="text-gray-700">{doc.created_at}</strong></div>
@@ -845,7 +858,7 @@ export default function DesktopApp() {
 
                   {/* Document Items Detail */}
                   <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100 mb-3">
-                    <table className="w-full text-left text-[11px]">
+                    <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="text-gray-400 font-bold border-b border-gray-200 pb-1">
                           <th className="pb-1">物料编码</th>
@@ -930,12 +943,12 @@ export default function DesktopApp() {
                       <span className="font-extrabold text-sm text-gray-800">{doc.document_no}</span>
                       <span className="px-2 py-0.5 rounded bg-gray-50 text-gray-500 text-[10px] font-mono border border-gray-200">{doc.sub_type}</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-150">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       已实发出库
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4 text-[11px] text-gray-400 mb-3 font-mono">
+                  <div className="grid grid-cols-4 gap-4 text-xs text-gray-400 mb-3 font-mono">
                     <div>出货库房: <strong className="text-gray-700 font-sans">{doc.warehouse_code}</strong></div>
                     <div>出库员: <strong className="text-gray-700 font-sans">{doc.creator}</strong></div>
                     <div>发放时间: <strong className="text-gray-700">{doc.created_at}</strong></div>
@@ -944,7 +957,7 @@ export default function DesktopApp() {
 
                   {/* Items Detail */}
                   <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                    <table className="w-full text-left text-[11px]">
+                    <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="text-gray-400 font-bold border-b border-gray-200 pb-1">
                           <th className="pb-1">物料编码</th>
@@ -991,17 +1004,17 @@ export default function DesktopApp() {
                       <span className="font-extrabold text-sm text-gray-800">{doc.document_no}</span>
                       <span className="px-2 py-0.5 rounded bg-gray-50 text-gray-500 text-[10px] font-mono border border-gray-200">{doc.sub_type}</span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${getDocStatusStyles(doc.status)}`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${getDocStatusStyles(doc.status)}`}>
                       {doc.status}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-amber-700 font-medium mb-3 bg-amber-50 py-1 px-2 border border-amber-100 rounded">
+                  <p className="text-xs text-amber-700 font-medium mb-3 bg-amber-50 py-1 px-2 border border-amber-200 rounded">
                     账面核对结论：{doc.remark}
                   </p>
 
                   <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100 mb-3">
-                    <table className="w-full text-left text-[11px]">
+                    <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="text-gray-400 font-bold border-b border-gray-200 pb-1">
                           <th className="pb-1">盘点物料</th>
@@ -1090,26 +1103,26 @@ export default function DesktopApp() {
             <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center text-xs font-semibold text-gray-700">
                 <span>出入库主流水账本 Ledger (由扫码事件直接物理追加，财务只读防作弊)</span>
-                <span className="text-[11px] text-gray-400 font-normal">每一次库存变化都会生成凭证，历史异动永远保留</span>
+                <span className="text-xs text-gray-400 font-normal">每一次库存变化都会生成凭证，历史异动永远保留</span>
               </div>
 
               <div className="overflow-x-auto text-xs">
                 <table className="w-full text-left">
-                  <thead className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200 text-[11px]">
+                  <thead className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200 text-xs">
                     <tr>
-                      <th className="p-3">流水编号</th>
-                      <th className="p-3">作业类型</th>
-                      <th className="p-3">物料SKU</th>
-                      <th className="p-3">物料名称</th>
-                      <th className="p-3">位置货架</th>
+                      <th className="py-3 px-4">流水编号</th>
+                      <th className="py-3 px-4">作业类型</th>
+                      <th className="py-3 px-4">物料SKU</th>
+                      <th className="py-3 px-4">物料名称</th>
+                      <th className="py-3 px-4">位置货架</th>
                       <th className="p-3 text-right">原库存</th>
                       <th className="p-3 text-right">异动量</th>
                       <th className="p-3 text-right">变动后新库存</th>
-                      <th className="p-3">提交作业员</th>
+                      <th className="py-3 px-4">提交作业员</th>
                       <th className="p-3 text-right">物理入账时间</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 font-mono text-[11px]">
+                  <tbody className="divide-y divide-gray-100 font-mono text-xs">
                     {movements
                       .filter(m => {
                         const matchSearch = m.material_code.toLowerCase().includes(searchQuery.toLowerCase()) || m.material_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1121,8 +1134,8 @@ export default function DesktopApp() {
                         <tr key={m.movement_no} className="hover:bg-gray-50/50 transition-all">
                           <td className="p-3 font-bold text-gray-400">{m.movement_no}</td>
                           <td className="p-3 font-sans">
-                            <span className={`px-1.5 py-0.5 rounded-sm font-semibold text-[10px] ${
-                              m.movement_type.includes('入库') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                            <span className={`px-1.5 py-0.5 rounded-md font-semibold text-[10px] ${
+                              m.movement_type.includes('入库') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}>
                               {m.movement_type}
                             </span>
@@ -1176,39 +1189,39 @@ export default function DesktopApp() {
                 <table className="w-full text-left">
                   <thead className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">
                     <tr>
-                      <th className="p-3">预警凭证</th>
-                      <th className="p-3">类型</th>
-                      <th className="p-3">严重级</th>
-                      <th className="p-3">物料SKU</th>
-                      <th className="p-3">名称</th>
+                      <th className="py-3 px-4">预警凭证</th>
+                      <th className="py-3 px-4">类型</th>
+                      <th className="py-3 px-4">严重级</th>
+                      <th className="py-3 px-4">物料SKU</th>
+                      <th className="py-3 px-4">名称</th>
                       <th className="p-3 text-right">安全水位线</th>
                       <th className="p-3 text-right">当前总余量</th>
                       <th className="p-3 text-right">缺口补齐建议量</th>
-                      <th className="p-3">推荐决策动作</th>
-                      <th className="p-3">当前跟进状态</th>
+                      <th className="py-3 px-4">推荐决策动作</th>
+                      <th className="py-3 px-4">当前跟进状态</th>
                       <th className="p-3 text-right">跟进人</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 font-mono text-[11px]">
+                  <tbody className="divide-y divide-gray-100 font-mono text-xs">
                     {alerts
                       .filter(a => alertTypeFilter ? a.alert_type === alertTypeFilter : true)
                       .map(a => (
                         <tr key={a.alert_no} className="hover:bg-gray-50/50 transition-all">
                           <td className="p-3 font-bold text-gray-400">{a.alert_no}</td>
                           <td className="p-3 font-sans font-bold">
-                            <span className={`px-2 py-0.5 rounded-sm ${
-                              a.alert_type === '缺货' ? 'bg-red-50 text-red-700 border border-red-100' :
-                              a.alert_type === '负库存风险' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
-                              a.alert_type === '低库存' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                            <span className={`px-2 py-0.5 rounded-md ${
+                              a.alert_type === '缺货' ? 'bg-red-50 text-red-700 border border-red-200' :
+                              a.alert_type === '负库存风险' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                              a.alert_type === '低库存' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                               'bg-purple-50 text-purple-700 border border-purple-100'
                             }`}>
                               {a.alert_type}
                             </span>
                           </td>
                           <td className="p-3 font-sans">
-                            <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-bold ${
-                              a.severity === '高' ? 'bg-red-50 text-red-700 border border-red-100' :
-                              a.severity === '中' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                              a.severity === '高' ? 'bg-red-50 text-red-700 border border-red-200' :
+                              a.severity === '中' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                               'bg-sky-50 text-sky-700 border border-sky-100'
                             }`}>
                               {a.severity}
@@ -1222,8 +1235,8 @@ export default function DesktopApp() {
                           <td className="p-3 font-sans text-gray-500 max-w-[180px] truncate">{a.suggested_action}</td>
                           <td className="p-3 font-sans">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                              a.status === '已处理' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                              a.status === '处理中' ? 'bg-blue-50 text-blue-700 border border-blue-100 animate-pulse' :
+                              a.status === '已处理' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                              a.status === '处理中' ? 'bg-blue-50 text-blue-700 border border-blue-200 animate-pulse' :
                               'bg-gray-100 text-gray-500 border border-gray-200'
                             }`}>
                               {a.status}
@@ -1340,10 +1353,10 @@ export default function DesktopApp() {
         )}
 
         {/* ======================================================== */}
-        {/* VIEW: INTEGRATION & ARCHITECTURE (CRITICAL USER REQUEST) */}
+        {/* VIEW: SETTINGS & BASIC SETUP */}
         {/* ======================================================== */}
-        {activeMenu === 'integration' && (
-          <div className="space-y-6">
+        {activeMenu === 'settings' && (
+          <div className="space-y-6 text-xs font-sans">
             
             {/* Database Rules Board */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 text-xs shadow-sm">
@@ -1401,7 +1414,7 @@ export default function DesktopApp() {
                 <div className="w-[1px] h-6 bg-gray-200"></div>
 
                 {/* Layer 2: API gateway */}
-                <div className="bg-emerald-600 text-white font-extrabold px-6 py-2 rounded-xl text-[11px] shadow-sm tracking-wider flex items-center gap-2">
+                <div className="bg-emerald-600 text-white font-extrabold px-6 py-2 rounded-xl text-xs shadow-sm tracking-wider flex items-center gap-2">
                   <span>WMS API INTERFACE & AUTHENTICATION (Restful / Sync Gateway)</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </div>
@@ -1478,10 +1491,10 @@ export default function DesktopApp() {
                   </div>
                 </div>
 
-                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex flex-col justify-between">
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 flex flex-col justify-between">
                   <div>
                     <span className="font-bold text-amber-700 block mb-1">⚠️ 生产过渡提醒</span>
-                    <p className="text-gray-500 text-[11px] leading-relaxed">
+                    <p className="text-gray-500 text-xs leading-relaxed">
                       当前为零配置 Web 完整原型版本。您可以使用手机扫码枪进行增删，所有库存数据在全局 context 内存及 localState 自动落盘，断开浏览器标签页也不丢失。在未来的正式数据库上线对接中，只需要编写后台服务控制器直连上方的物理库表，前端即可无缝衔接。
                     </p>
                   </div>
@@ -1495,15 +1508,7 @@ export default function DesktopApp() {
               </div>
             </div>
 
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* VIEW: SETTINGS & BASIC SETUP */}
-        {/* ======================================================== */}
-        {activeMenu === 'settings' && (
-          <div className="space-y-6 text-xs font-sans">
-            
+            {/* Integration ends, continue settings */}
             <div className="grid grid-cols-2 gap-6">
               
               {/* Warehouse Locations Setup */}
@@ -1512,7 +1517,7 @@ export default function DesktopApp() {
                   <h4 className="font-bold text-gray-700">货架四级物理货位定位表 ({locations.length} 个)</h4>
                   <button
                     onClick={() => setShowAddLoc(true)}
-                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer shadow-sm transition-all"
+                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm transition-all"
                   >
                     <Plus className="w-3.5 h-3.5" /> 增加新货位
                   </button>
@@ -1521,7 +1526,7 @@ export default function DesktopApp() {
                 {/* Add Location Modal Simulation */}
                 {showAddLoc && (
                   <form onSubmit={handleCreateLocation} className="bg-gray-50 p-3 rounded-xl border border-gray-200 mb-3 space-y-3">
-                    <span className="block font-bold text-gray-700 text-[11px]">添加注册物理货位码</span>
+                    <span className="block font-bold text-gray-700 text-xs">添加注册物理货位码</span>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-[10px] text-gray-400 block mb-1">物理定位编码 (e.g. A01-02-02)</label>
@@ -1578,7 +1583,7 @@ export default function DesktopApp() {
 
                 <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
                   {locations.map(l => (
-                    <div key={l.location_code} className="bg-gray-50 p-2.5 rounded-lg border border-gray-150 flex justify-between items-center text-[11px] font-mono hover:bg-white hover:shadow-sm transition-all">
+                    <div key={l.location_code} className="bg-gray-50 p-2.5 rounded-lg border border-gray-150 flex justify-between items-center text-xs font-mono hover:bg-white hover:shadow-sm transition-all">
                       <div>
                         <strong className="text-amber-600">{l.location_code}</strong>
                         <span className="text-gray-400 block text-[10px] mt-0.5 font-sans">{l.location_name} • 仓库: {l.warehouse_code}</span>
@@ -1594,11 +1599,11 @@ export default function DesktopApp() {
               {/* Barcode Rules and setup */}
               <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-4 shadow-sm">
                 <h4 className="font-bold text-gray-700">WMS 物理PDA及扫码规则配置</h4>
-                <p className="text-gray-500 text-[11px] leading-relaxed">
+                <p className="text-gray-500 text-xs leading-relaxed">
                   可绑定仓库现场手持 PDA 的物理扫码规则。扫描标签后，系统按照正则前缀自动映射对应的业务表关联：
                 </p>
 
-                <div className="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-100 text-[11px]">
+                <div className="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs">
                   <div className="flex justify-between border-b border-gray-100 pb-1.5">
                     <span className="font-bold text-gray-400">物料标签码匹配格式：</span>
                     <span className="font-mono text-gray-600">纯字符串 SKU 码 (例如 FAB-210D-BK)</span>
@@ -1613,7 +1618,7 @@ export default function DesktopApp() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 leading-relaxed text-[10px]">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 leading-relaxed text-[10px]">
                   <b>💡 条码规则可编辑性：</b>在生产过渡时，可按此格式通过 Restful API 进行物料绑定生成条码标签直接打印。WMS 支持无缝导出为标准的 ZPL 打印格式进行标签热敏打印。
                 </div>
               </div>

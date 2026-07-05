@@ -6,6 +6,12 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@layer base {
+  th, td {
+    @apply whitespace-nowrap;
+  }
+}
+
 /* Custom scrollbar styling for neat minimalism */
 ::-webkit-scrollbar {
   width: 6px;
