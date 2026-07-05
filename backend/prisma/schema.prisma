@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum Department {
+  WAREHOUSE
+  PURCHASING
+  PMC
+  FINANCE
+  ADMIN
+  OTHER
+}
+
+enum ItemCategory {
+  FABRIC
+  ZIPPER
+  HARDWARE
+  LINING
+  PACKAGING
+  ACCESSORY
+  SEMI_FINISHED
+  FINISHED_GOODS
+  OTHER
+}
+
+enum ItemStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum StockInType {
+  PURCHASE
+  PRODUCTION_RETURN
+  INVENTORY_GAIN
+  OTHER
+}
+
+enum StockOutType {
+  PRODUCTION_PICKING
+  SALES
+  SCRAP
+  INVENTORY_LOSS
+  OTHER
+}
+
+enum MovementType {
+  STOCK_IN
+  STOCK_OUT
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum SourceType {
+  STOCK_IN_ORDER
+  STOCK_OUT_ORDER
+  STOCK_ADJUSTMENT
+  MANUAL
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  name         String
+  role         Role
+  department   Department?   @default(OTHER)
+  status       UserStatus    @default(ACTIVE)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+
+  createdStockInOrders  StockInOrder[]     @relation("StockInOrder_operator")
+  createdStockOutOrders StockOutOrder[]    @relation("StockOutOrder_operator")
+  createdAdjustments    StockAdjustment[]  @relation("StockAdjustment_operator")
+  stockMovements        StockMovement[]    @relation("StockMovement_operator")
+  operationLogs         OperationLog[]
+
+  @@map("users")
+}
+
+model Item {
+  id            String       @id @default(uuid())
+  itemCode      String       @unique @map("item_code")
+  itemName      String       @map("item_name")
+  category      ItemCategory
+  specification String?
+  color         String?
+  unit          String
+  supplier      String?
+  safetyStock   Decimal      @default(0) @map("safety_stock")
+  status        ItemStatus   @default(ACTIVE)
+  remark        String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  inventoryBalances    InventoryBalance[]
+  stockInOrderItems    StockInOrderItem[]
+  stockOutOrderItems   StockOutOrderItem[]
+  stockAdjustmentItems StockAdjustmentItem[]
+  stockMovements       StockMovement[]
+
+  @@map("items")
+}
+
+model Warehouse {
+  id            String     @id @default(uuid())
+  warehouseCode String     @unique @map("warehouse_code")
+  warehouseName String     @map("warehouse_name")
+  status        String     @default("ACTIVE")
+  remark        String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  locations          Location[]
+  inventoryBalances  InventoryBalance[]
+  stockInOrders      StockInOrder[]
+  stockOutOrders     StockOutOrder[]
+  stockAdjustments   StockAdjustment[]
+  stockMovements     StockMovement[]
+
+  @@map("warehouses")
+}
+
+model Location {
+  id            String    @id @default(uuid())
+  locationCode  String    @map("location_code")
+  locationName  String    @map("location_name")
+  warehouseId   String    @map("warehouse_id")
+  status        String    @default("ACTIVE")
+  remark        String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  warehouse          Warehouse            @relation(fields: [warehouseId], references: [id])
+  inventoryBalances  InventoryBalance[]
+  stockInOrderItems  StockInOrderItem[]
+  stockOutOrderItems StockOutOrderItem[]
+  stockAdjustmentItems StockAdjustmentItem[]
+  stockMovements     StockMovement[]
+
+  @@unique([warehouseId, locationCode])
+  @@map("locations")
+}
+
+model InventoryBalance {
+  id          String   @id @default(uuid())
+  itemId      String   @map("item_id")
+  warehouseId String   @map("warehouse_id")
+  locationId  String   @map("location_id")
+  quantity    Decimal  @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  item      Item      @relation(fields: [itemId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  location  Location  @relation(fields: [locationId], references: [id])
+
+  @@unique([itemId, warehouseId, locationId])
+  @@map("inventory_balances")
+}
+
+model StockInOrder {
+  id          String      @id @default(uuid())
+  orderNo     String      @unique @map("order_no")
+  type        StockInType
+  warehouseId String      @map("warehouse_id")
+  operatorId  String      @map("operator_id")
+  remark      String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  operator  User      @relation("StockInOrder_operator", fields: [operatorId], references: [id])
+  items     StockInOrderItem[]
+
+  @@map("stock_in_orders")
+}
+
+model StockInOrderItem {
+  id         String @id @default(uuid())
+  orderId    String @map("order_id")
+  itemId     String @map("item_id")
+  locationId String @map("location_id")
+  quantity   Decimal
+  unit       String
+  remark     String?
+
+  order    StockInOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item     Item         @relation(fields: [itemId], references: [id])
+  location Location     @relation(fields: [locationId], references: [id])
+
+  @@map("stock_in_order_items")
+}
+
+model StockOutOrder {
+  id          String       @id @default(uuid())
+  orderNo     String       @unique @map("order_no")
+  type        StockOutType
+  warehouseId String       @map("warehouse_id")
+  operatorId  String       @map("operator_id")
+  remark      String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
+  operator  User       @relation("StockOutOrder_operator", fields: [operatorId], references: [id])
+  items     StockOutOrderItem[]
+
+  @@map("stock_out_orders")
+}
+
+model StockOutOrderItem {
+  id         String @id @default(uuid())
+  orderId    String @map("order_id")
+  itemId     String @map("item_id")
+  locationId String @map("location_id")
+  quantity   Decimal
+  unit       String
+  remark     String?
+
+  order    StockOutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item     Item          @relation(fields: [itemId], references: [id])
+  location Location      @relation(fields: [locationId], references: [id])
+
+  @@map("stock_out_order_items")
+}
+
+model StockAdjustment {
+  id            String   @id @default(uuid())
+  adjustmentNo  String   @unique @map("adjustment_no")
+  warehouseId   String   @map("warehouse_id")
+  operatorId    String   @map("operator_id")
+  reason        String
+  remark        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  operator  User      @relation("StockAdjustment_operator", fields: [operatorId], references: [id])
+  items     StockAdjustmentItem[]
+
+  @@map("stock_adjustments")
+}
+
+model StockAdjustmentItem {
+  id             String  @id @default(uuid())
+  adjustmentId   String  @map("adjustment_id")
+  itemId         String  @map("item_id")
+  locationId     String  @map("location_id")
+  quantityBefore Decimal @map("quantity_before")
+  quantityAfter  Decimal @map("quantity_after")
+  quantityChange Decimal @map("quantity_change")
+  unit           String
+  remark         String?
+
+  adjustment StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+  item       Item            @relation(fields: [itemId], references: [id])
+  location   Location        @relation(fields: [locationId], references: [id])
+
+  @@map("stock_adjustment_items")
+}
+
+model StockMovement {
+  id             String       @id @default(uuid())
+  movementNo     String       @unique @map("movement_no")
+  itemId         String       @map("item_id")
+  warehouseId    String       @map("warehouse_id")
+  locationId     String       @map("location_id")
+  movementType   MovementType @map("movement_type")
+  quantityChange Decimal      @map("quantity_change")
+  quantityBefore Decimal      @map("quantity_before")
+  quantityAfter  Decimal      @map("quantity_after")
+  sourceType     SourceType   @map("source_type")
+  sourceId       String       @map("source_id")
+  operatorId     String       @map("operator_id")
+  remark         String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  item      Item      @relation(fields: [itemId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  location  Location  @relation(fields: [locationId], references: [id])
+  operator  User      @relation("StockMovement_operator", fields: [operatorId], references: [id])
+
+  @@index([itemId])
+  @@index([warehouseId])
+  @@index([movementType])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model OperationLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  detail     String?
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("operation_logs")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
