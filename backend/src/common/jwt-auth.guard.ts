@@ -1,34 +1,26 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { ExecutionContext, Injectable, SetMetadata } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { AuthGuard } from "@nestjs/passport";
 
-export const IS_PUBLIC_KEY = "isPublic";
-export const Public = () =>
-  Reflector?.createDecorator?.() ?? SetMetadata("isPublic", true);
-
-import { SetMetadata } from "@nestjs/common";
 export const IS_PUBLIC = "isPublic";
 export const PublicRoute = () => SetMetadata(IS_PUBLIC, true);
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+export class JwtAuthGuard extends AuthGuard("jwt") {
+  constructor(private readonly reflector: Reflector) {
+    super();
+  }
 
-  canActivate(context: ExecutionContext): boolean {
+  canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
 
-    const request = context.switchToHttp().getRequest();
-    if (!request.user) {
-      throw new UnauthorizedException("未登录");
+    if (isPublic) {
+      return true;
     }
-    return true;
+
+    return super.canActivate(context);
   }
 }
