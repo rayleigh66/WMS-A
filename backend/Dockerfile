@@ -3,14 +3,12 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci
 
-COPY tsconfig.json tsconfig.build.json nest-cli.json ./
-COPY prisma/ ./prisma/
+COPY . .
 RUN npx prisma generate
-
-COPY src/ ./src/
 RUN npm run build
 
 # ---- Runtime Stage ----
@@ -18,18 +16,20 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache postgresql-client
+RUN apk add --no-cache postgresql-client wget
 
-COPY package.json package-lock.json ./
-RUN npm ci --only=production
+ENV NODE_ENV=production
 
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY package*.json ./
+RUN npm ci --omit=dev
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY prisma/schema.prisma ./prisma/
-COPY docker-entrypoint.sh ./
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
-RUN chmod +x docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3001
 

@@ -2,4 +2,8 @@ node_modules
 dist
 .git
 .env
-.vite
+.env.local
+coverage
+.DS_Store
+backend/node_modules
+backend/dist

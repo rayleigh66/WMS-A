@@ -1,30 +1,34 @@
 #!/bin/sh
 set -e
 
-echo "Waiting for PostgreSQL..."
-DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:/]*\).*/\1/p')
-DB_USER=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+DB_HOST=$(echo "$DATABASE_URL" | sed -E 's#.*@([^:/]+).*##')
+DB_PORT=$(echo "$DATABASE_URL" | sed -E 's#.*:([0-9]+)/.*##')
 
-until pg_isready -h "$DB_HOST" -U "$DB_USER" > /dev/null 2>&1; do
-  echo "PostgreSQL not ready yet, retrying in 2s..."
+if [ -z "$DB_HOST" ]; then
+  DB_HOST="postgres"
+fi
+
+if [ -z "$DB_PORT" ]; then
+  DB_PORT="5432"
+fi
+
+echo "Waiting for PostgreSQL at ${DB_HOST}:${DB_PORT}..."
+
+until pg_isready -h "$DB_HOST" -p "$DB_PORT" >/dev/null 2>&1; do
+  echo "PostgreSQL is unavailable - sleeping"
   sleep 2
 done
-echo "PostgreSQL is ready."
 
-echo "Running Prisma generate..."
+echo "PostgreSQL is ready"
+
+echo "Generating Prisma client..."
 npx prisma generate
 
-# Try migrate deploy first; if no migrations exist, use db push
-if [ -d "prisma/migrations" ] && [ "$(ls -A prisma/migrations)" ]; then
-  echo "Running Prisma migrate deploy..."
-  npx prisma migrate deploy
-else
-  echo "No migrations found, running prisma db push..."
-  npx prisma db push
-fi
+echo "Running Prisma migrations..."
+npx prisma migrate deploy
 
 echo "Running seed..."
 npm run seed
 
-echo "Starting server..."
+echo "Starting backend..."
 exec node dist/main.js
