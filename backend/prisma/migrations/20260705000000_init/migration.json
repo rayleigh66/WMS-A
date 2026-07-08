@@ -1,0 +1,88 @@
+{
+  "version": "5.2",
+  "steps": [
+    {
+      "tag": "CreateEnum",
+      "enum": "Role",
+      "values": ["ADMIN", "MANAGER", "OPERATOR", "VIEWER"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "UserStatus",
+      "values": ["ACTIVE", "DISABLED"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "Department",
+      "values": ["WAREHOUSE", "PURCHASING", "PMC", "FINANCE", "ADMIN", "OTHER"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "ItemCategory",
+      "values": ["FABRIC", "ZIPPER", "HARDWARE", "LINING", "PACKAGING", "ACCESSORY", "SEMI_FINISHED", "FINISHED_GOODS", "OTHER"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "ItemStatus",
+      "values": ["ACTIVE", "DISABLED"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "StockInType",
+      "values": ["PURCHASE", "PRODUCTION_RETURN", "INVENTORY_GAIN", "OTHER"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "StockOutType",
+      "values": ["PRODUCTION_PICKING", "SALES", "SCRAP", "INVENTORY_LOSS", "OTHER"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "MovementType",
+      "values": ["STOCK_IN", "STOCK_OUT", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"]
+    },
+    {
+      "tag": "CreateEnum",
+      "enum": "SourceType",
+      "values": ["STOCK_IN_ORDER", "STOCK_OUT_ORDER", "STOCK_ADJUSTMENT", "MANUAL"]
+    },
+    {
+      "tag": "CreateTable",
+      "table": "users",
+      "columns": [
+        { "name": "id", "type": "Text", "isNullable": false, "isUnique": false, "default": "gen_random_uuid()" },
+        { "name": "email", "type": "Text", "isNullable": false, "isUnique": true },
+        { "name": "password_hash", "type": "Text", "isNullable": false },
+        { "name": "name", "type": "Text", "isNullable": false },
+        { "name": "role", "type": "Role", "isNullable": false, "default": "'VIEWER'" },
+        { "name": "department", "type": "Department", "isNullable": true, "default": "'OTHER'" },
+        { "name": "status", "type": "UserStatus", "isNullable": false, "default": "'ACTIVE'" },
+        { "name": "created_at", "type": "DateTime", "isNullable": false, "default": "CURRENT_TIMESTAMP" },
+        { "name": "updated_at", "type": "DateTime", "isNullable": false },
+        { "name": "deleted_at", "type": "DateTime", "isNullable": true }
+      ],
+      "primaryKey": { "columns": ["id"] }
+    },
+    {
+      "tag": "CreateTable",
+      "table": "items",
+      "columns": [
+        { "name": "id", "type": "Text", "isNullable": false },
+        { "name": "item_code", "type": "Text", "isNullable": false, "isUnique": true },
+        { "name": "item_name", "type": "Text", "isNullable": false },
+        { "name": "category", "type": "ItemCategory", "isNullable": false },
+        { "name": "specification", "type": "Text", "isNullable": true },
+        { "name": "color", "type": "Text", "isNullable": true },
+        { "name": "unit", "type": "Text", "isNullable": false },
+        { "name": "supplier", "type": "Text", "isNullable": true },
+        { "name": "safety_stock", "type": "Decimal", "isNullable": false, "default": 0 },
+        { "name": "status", "type": "ItemStatus", "isNullable": false, "default": "'ACTIVE'" },
+        { "name": "remark", "type": "Text", "isNullable": true },
+        { "name": "created_at", "type": "DateTime", "isNullable": false, "default": "CURRENT_TIMESTAMP" },
+        { "name": "updated_at", "type": "DateTime", "isNullable": false },
+        { "name": "deleted_at", "type": "DateTime", "isNullable": true }
+      ],
+      "primaryKey": { "columns": ["id"] }
+    }
+  ]
+}
