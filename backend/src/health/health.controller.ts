@@ -1,12 +1,14 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { PrismaService } from "../prisma/prisma.service";
+import { PublicRoute } from "../common/jwt-auth.guard";
 
 @ApiTags("Health")
 @Controller("api/health")
 export class HealthController {
   constructor(private prisma: PrismaService) {}
 
+  @PublicRoute()
   @Get()
   @ApiOperation({ summary: "健康检查" })
   async check() {
