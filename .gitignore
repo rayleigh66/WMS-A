@@ -7,3 +7,12 @@ coverage/
 .env
 !.env.example
 backend/.env
+
+# Certificate and key files
+*.key
+*.pem
+*.crt
+*.csr
+*.srl
+certs/
+ssl/
