@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { OperationLogsService } from "../operation-logs/operation-logs.service";
@@ -9,6 +10,8 @@ import { CreateStockInDto } from "./dto/create-stock-in.dto";
 
 @Injectable()
 export class StockInService {
+  private readonly logger = new Logger(StockInService.name);
+
   constructor(
     private prisma: PrismaService,
     private operationLogsService: OperationLogsService,
@@ -58,55 +61,46 @@ export class StockInService {
   }
 
   async create(dto: CreateStockInDto, operatorId: string) {
-    // Validate items exist and are active
+    const uniqueItemIds = [...new Set(dto.items.map((i) => i.itemId))];
     const items = await this.prisma.item.findMany({
       where: {
-        id: { in: dto.items.map((i) => i.itemId) },
+        id: { in: uniqueItemIds },
         status: "ACTIVE",
         deletedAt: null,
       },
     });
-    if (items.length !== dto.items.length) {
+    if (items.length !== uniqueItemIds.length) {
       throw new BadRequestException("存在无效或已停用的物料");
     }
 
-    // Validate warehouse
     const warehouse = await this.prisma.warehouse.findUnique({
       where: { id: dto.warehouseId },
     });
     if (!warehouse || warehouse.deletedAt)
       throw new NotFoundException("仓库不存在");
 
-    // Validate locations
-    for (const item of dto.items) {
-      const location = await this.prisma.location.findUnique({
-        where: { id: item.locationId },
-      });
-      if (
-        !location ||
-        location.deletedAt ||
-        location.warehouseId !== dto.warehouseId
-      ) {
-        throw new BadRequestException(
-          `库位 ${item.locationId} 无效或不属于该仓库`,
-        );
-      }
-      if (item.quantity <= 0) {
-        throw new BadRequestException("数量必须大于0");
-      }
+    const locationIds = [...new Set(dto.items.map((i) => i.locationId))];
+    const locations = await this.prisma.location.findMany({
+      where: { id: { in: locationIds }, deletedAt: null },
+      select: { id: true, warehouseId: true, status: true },
+    });
+    if (
+      locations.length !== locationIds.length ||
+      locations.some((location) => location.warehouseId !== dto.warehouseId || location.status !== "ACTIVE")
+    ) {
+      throw new BadRequestException("存在无效、停用或不属于当前仓库的库位");
     }
 
-    // Generate order number
+    for (const item of dto.items) {
+      if (item.quantity <= 0) throw new BadRequestException("数量必须大于0");
+    }
+
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const count = await this.prisma.stockInOrder.count({
-      where: { orderNo: { startsWith: `IN-${dateStr}` } },
-    });
-    const orderNo = `IN-${dateStr}-${String(count + 1).padStart(4, "0")}`;
+    const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+    const orderNo = `IN-${dateStr}-${suffix}`;
 
-    // Use transaction for consistency
     const result = await this.prisma.$transaction(async (tx) => {
-      // Create order
       const order = await tx.stockInOrder.create({
         data: {
           orderNo,
@@ -128,7 +122,6 @@ export class StockInService {
       });
 
       for (const item of dto.items) {
-        // Update or create inventory balance
         const balance = await tx.inventoryBalance.upsert({
           where: {
             itemId_warehouseId_locationId: {
@@ -148,12 +141,7 @@ export class StockInService {
 
         const qtyBefore = Number(balance.quantity) - Number(item.quantity);
         const qtyAfter = Number(balance.quantity);
-
-        // Create stock movement
-        const movCount = await tx.stockMovement.count({
-          where: { movementNo: { startsWith: `MOV-${dateStr}` } },
-        });
-        const movementNo = `MOV-${dateStr}-${String(movCount + 1).padStart(4, "0")}`;
+        const movementNo = `MOV-${dateStr}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
         await tx.stockMovement.create({
           data: {
@@ -176,14 +164,17 @@ export class StockInService {
       return order;
     });
 
-    // Log operation
-    await this.operationLogsService.log({
-      userId: operatorId,
-      action: "创建入库单",
-      entityType: "StockInOrder",
-      entityId: result.id,
-      detail: `创建入库单 ${orderNo}，${dto.items.length} 条明细`,
-    });
+    try {
+      await this.operationLogsService.log({
+        userId: operatorId,
+        action: "创建入库单",
+        entityType: "StockInOrder",
+        entityId: result.id,
+        detail: `创建入库单 ${orderNo}，${dto.items.length} 条明细`,
+      });
+    } catch (error) {
+      this.logger.error(`入库已成功但操作日志写入失败: ${result.id}`, error as any);
+    }
 
     return this.findOne(result.id);
   }
