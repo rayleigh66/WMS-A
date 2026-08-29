@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { OperationLogsService } from "../operation-logs/operation-logs.service";
@@ -9,6 +10,8 @@ import { CreateStockOutDto } from "./dto/create-stock-out.dto";
 
 @Injectable()
 export class StockOutService {
+  private readonly logger = new Logger(StockOutService.name);
+
   constructor(
     private prisma: PrismaService,
     private operationLogsService: OperationLogsService,
@@ -57,14 +60,15 @@ export class StockOutService {
   }
 
   async create(dto: CreateStockOutDto, operatorId: string) {
+    const uniqueItemIds = [...new Set(dto.items.map((i) => i.itemId))];
     const items = await this.prisma.item.findMany({
       where: {
-        id: { in: dto.items.map((i) => i.itemId) },
+        id: { in: uniqueItemIds },
         status: "ACTIVE",
         deletedAt: null,
       },
     });
-    if (items.length !== dto.items.length)
+    if (items.length !== uniqueItemIds.length)
       throw new BadRequestException("存在无效或已停用的物料");
 
     const warehouse = await this.prisma.warehouse.findUnique({
@@ -73,34 +77,26 @@ export class StockOutService {
     if (!warehouse || warehouse.deletedAt)
       throw new NotFoundException("仓库不存在");
 
+    const locationIds = [...new Set(dto.items.map((i) => i.locationId))];
+    const locations = await this.prisma.location.findMany({
+      where: { id: { in: locationIds }, deletedAt: null },
+      select: { id: true, warehouseId: true, status: true },
+    });
+    if (
+      locations.length !== locationIds.length ||
+      locations.some((location) => location.warehouseId !== dto.warehouseId || location.status !== "ACTIVE")
+    ) {
+      throw new BadRequestException("存在无效、停用或不属于当前仓库的库位");
+    }
+
+    for (const item of dto.items) {
+      if (item.quantity <= 0) throw new BadRequestException("数量必须大于0");
+    }
+
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const count = await this.prisma.stockOutOrder.count({
-      where: { orderNo: { startsWith: `OUT-${dateStr}` } },
-    });
-    const orderNo = `OUT-${dateStr}-${String(count + 1).padStart(4, "0")}`;
-
-    // Check stock availability first
-    for (const item of dto.items) {
-      const balance = await this.prisma.inventoryBalance.findUnique({
-        where: {
-          itemId_warehouseId_locationId: {
-            itemId: item.itemId,
-            warehouseId: dto.warehouseId,
-            locationId: item.locationId,
-          },
-        },
-      });
-      const available = balance ? Number(balance.quantity) : 0;
-      if (available < item.quantity) {
-        throw new BadRequestException({
-          message: "库存不足",
-          itemId: item.itemId,
-          availableQuantity: String(available),
-          requestedQuantity: String(item.quantity),
-        });
-      }
-    }
+    const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+    const orderNo = `OUT-${dateStr}-${suffix}`;
 
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.stockOutOrder.create({
@@ -124,7 +120,7 @@ export class StockOutService {
       });
 
       for (const item of dto.items) {
-        const balance = await tx.inventoryBalance.findUnique({
+        const balanceBefore = await tx.inventoryBalance.findUnique({
           where: {
             itemId_warehouseId_locationId: {
               itemId: item.itemId,
@@ -133,24 +129,39 @@ export class StockOutService {
             },
           },
         });
-        const qtyBefore = balance ? Number(balance.quantity) : 0;
+        const qtyBefore = balanceBefore ? Number(balanceBefore.quantity) : 0;
 
-        await tx.inventoryBalance.update({
+        const updated = await tx.inventoryBalance.updateMany({
           where: {
-            itemId_warehouseId_locationId: {
-              itemId: item.itemId,
-              warehouseId: dto.warehouseId,
-              locationId: item.locationId,
-            },
+            itemId: item.itemId,
+            warehouseId: dto.warehouseId,
+            locationId: item.locationId,
+            quantity: { gte: item.quantity },
           },
           data: { quantity: { decrement: item.quantity } },
         });
 
-        const qtyAfter = qtyBefore - Number(item.quantity);
-        const movCount = await tx.stockMovement.count({
-          where: { movementNo: { startsWith: `MOV-${dateStr}` } },
+        if (updated.count !== 1) {
+          throw new BadRequestException({
+            message: "库存不足或库存已被其他操作占用",
+            itemId: item.itemId,
+            availableQuantity: String(qtyBefore),
+            requestedQuantity: String(item.quantity),
+          });
+        }
+
+        const balanceAfter = await tx.inventoryBalance.findUnique({
+          where: {
+            itemId_warehouseId_locationId: {
+              itemId: item.itemId,
+              warehouseId: dto.warehouseId,
+              locationId: item.locationId,
+            },
+          },
         });
-        const movementNo = `MOV-${dateStr}-${String(movCount + 1).padStart(4, "0")}`;
+        const qtyAfter = balanceAfter ? Number(balanceAfter.quantity) : 0;
+        const movementNo = `MOV-${dateStr}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
         await tx.stockMovement.create({
           data: {
             movementNo,
@@ -172,13 +183,17 @@ export class StockOutService {
       return order;
     });
 
-    await this.operationLogsService.log({
-      userId: operatorId,
-      action: "创建出库单",
-      entityType: "StockOutOrder",
-      entityId: result.id,
-      detail: `创建出库单 ${orderNo}，${dto.items.length} 条明细`,
-    });
+    try {
+      await this.operationLogsService.log({
+        userId: operatorId,
+        action: "创建出库单",
+        entityType: "StockOutOrder",
+        entityId: result.id,
+        detail: `创建出库单 ${orderNo}，${dto.items.length} 条明细`,
+      });
+    } catch (error) {
+      this.logger.error(`出库已成功但操作日志写入失败: ${result.id}`, error as any);
+    }
 
     return this.findOne(result.id);
   }
