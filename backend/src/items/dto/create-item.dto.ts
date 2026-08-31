@@ -7,6 +7,11 @@ export class CreateItemDto {
   @IsString()
   itemCode: string;
 
+  @ApiPropertyOptional({ example: "6941234567890" })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
   @ApiProperty({ example: "210D 尼龙面料" })
   @IsString()
   itemName: string;
