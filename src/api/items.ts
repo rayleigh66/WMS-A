@@ -5,6 +5,8 @@ export const itemsApi = {
   list: (params?: { page?: string; pageSize?: string; search?: string; category?: string; status?: string }) =>
     api.get<PaginatedResponse<Item>>('/items', params as Record<string, string | undefined>),
 
+  resolveScan: (code: string) => api.get<Item>(`/items/scan/${encodeURIComponent(code)}`),
+
   get: (id: string) => api.get<Item>(`/items/${id}`),
 
   create: (data: Partial<Item>) => api.post<Item>('/items', data),
