@@ -99,6 +99,7 @@ model User {
 model Item {
   id            String       @id @default(uuid())
   itemCode      String       @unique @map("item_code")
+  barcode       String?      @unique
   itemName      String       @map("item_name")
   category      ItemCategory
   specification String?
@@ -183,6 +184,7 @@ model InventoryBalance {
 model StockInOrder {
   id          String      @id @default(uuid())
   orderNo     String      @unique @map("order_no")
+  requestId   String?     @unique @map("request_id")
   type        StockInType
   warehouseId String      @map("warehouse_id")
   operatorId  String      @map("operator_id")
@@ -216,6 +218,7 @@ model StockInOrderItem {
 model StockOutOrder {
   id          String       @id @default(uuid())
   orderNo     String       @unique @map("order_no")
+  requestId   String?      @unique @map("request_id")
   type        StockOutType
   warehouseId String       @map("warehouse_id")
   operatorId  String       @map("operator_id")

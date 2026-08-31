@@ -1,21 +1,22 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Warehouse, Database, ArrowDownLeft, ArrowUpRight,
-  SlidersHorizontal, History, Users, FileText, Settings, X,
+  SlidersHorizontal, History, Users, FileText, X, ScanLine,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
 import { canManageUsers, canViewLogs } from '../../auth/role';
 
 const navItems = [
+  { to: '/scanner', label: '扫码工作台', icon: ScanLine },
   { to: '/dashboard', label: '控制台', icon: LayoutDashboard },
-  { to: '/items', label: '物料管理', icon: Package },
-  { to: '/warehouses', label: '仓库管理', icon: Warehouse },
-  { to: '/locations', label: '库位管理', icon: Database },
   { to: '/inventory', label: '库存查询', icon: Database },
   { to: '/stock-in', label: '入库管理', icon: ArrowDownLeft },
   { to: '/stock-out', label: '出库管理', icon: ArrowUpRight },
   { to: '/adjustments', label: '库存调整', icon: SlidersHorizontal },
   { to: '/movements', label: '库存流水', icon: History },
+  { to: '/items', label: '物料管理', icon: Package },
+  { to: '/warehouses', label: '仓库管理', icon: Warehouse },
+  { to: '/locations', label: '库位管理', icon: Database },
 ];
 
 interface SidebarProps {
@@ -94,7 +95,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         <div className="p-4 border-t border-slate-700 text-xs text-slate-400">
-          v0.1.0
+          Warehouse Pilot v1
         </div>
       </aside>
     </>

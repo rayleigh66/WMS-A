@@ -48,6 +48,12 @@ export class ItemsController {
     });
   }
 
+  @Get("scan/:code")
+  @ApiOperation({ summary: "按 SKU 或条码解析扫码结果" })
+  resolveScan(@Param("code") code: string) {
+    return this.itemsService.resolveScanCode(code);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "获取单个物料" })
   findOne(@Param("id") id: string) {

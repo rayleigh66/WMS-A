@@ -22,6 +22,11 @@ class StockOutItemDto {
 }
 
 export class CreateStockOutDto {
+  @ApiPropertyOptional({ description: "客户端请求唯一标识，用于防止重复出库" })
+  @IsOptional()
+  @IsUUID()
+  requestId?: string;
+
   @ApiProperty({ enum: StockOutType, example: "PRODUCTION_PICKING" })
   @IsEnum(StockOutType)
   type: StockOutType;

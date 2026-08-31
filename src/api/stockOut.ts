@@ -8,7 +8,7 @@ export const stockOutApi = {
   get: (id: string) => api.get<StockOutOrder>(`/stock-out/${id}`),
 
   create: (data: {
-    type: string; warehouseId: string; remark?: string;
+    requestId?: string; type: string; warehouseId: string; remark?: string;
     items: { itemId: string; locationId: string; quantity: number; unit: string; remark?: string }[];
   }) => api.post<StockOutOrder>('/stock-out', data),
 };

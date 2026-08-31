@@ -1,0 +1,78 @@
+name: WMS CI
+
+on:
+  push:
+    branches: [main, feature/warehouse-pilot-v1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  backend-and-inventory:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: wms
+          POSTGRES_PASSWORD: wms_password
+          POSTGRES_DB: wms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wms -d wms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      PORT: 3001
+      DATABASE_URL: postgresql://wms:wms_password@localhost:5432/wms?schema=public
+      JWT_SECRET: warehouse-pilot-ci-secret-change-in-production
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: ChangeMe123!
+      DEFAULT_ADMIN_NAME: CI Admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend
+        working-directory: backend
+        run: npm ci
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+      - name: Apply migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+      - name: Seed isolated CI database
+        working-directory: backend
+        run: npm run seed
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup npm start >/tmp/wms-backend.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3001/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/wms-backend.log
+          exit 1
+      - name: Warehouse inventory acceptance
+        run: bash scripts/warehouse-pilot-acceptance.sh

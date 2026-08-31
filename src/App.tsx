@@ -4,6 +4,7 @@ import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import ScannerPage from './pages/ScannerPage';
 import ItemsPage from './pages/ItemsPage';
 import WarehousesPage from './pages/WarehousesPage';
 import LocationsPage from './pages/LocationsPage';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/scanner" element={<ScannerPage />} />
             <Route path="/items" element={<ItemsPage />} />
             <Route path="/warehouses" element={<WarehousesPage />} />
             <Route path="/locations" element={<LocationsPage />} />
@@ -33,7 +35,7 @@ export default function App() {
             <Route path="/movements" element={<MovementsPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/operation-logs" element={<OperationLogsPage />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/scanner" replace />} />
           </Route>
         </Routes>
       </AuthProvider>

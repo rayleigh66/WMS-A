@@ -38,6 +38,11 @@ export class StockInItemDto {
 }
 
 export class CreateStockInDto {
+  @ApiPropertyOptional({ description: "客户端请求唯一标识，用于防止重复入库" })
+  @IsOptional()
+  @IsUUID()
+  requestId?: string;
+
   @ApiProperty({ enum: StockInType, example: "PURCHASE" })
   @IsEnum(StockInType)
   type: StockInType;
