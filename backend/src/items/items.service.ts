@@ -2,7 +2,6 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
-  BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateItemDto } from "./dto/create-item.dto";
@@ -24,9 +23,10 @@ export class ItemsService {
     const where: any = { deletedAt: null };
     if (search) {
       where.OR = [
-        { itemCode: { contains: search } },
-        { itemName: { contains: search } },
-        { specification: { contains: search } },
+        { itemCode: { contains: search, mode: "insensitive" } },
+        { barcode: { contains: search } },
+        { itemName: { contains: search, mode: "insensitive" } },
+        { specification: { contains: search, mode: "insensitive" } },
       ];
     }
     if (category) where.category = category;
@@ -50,41 +50,71 @@ export class ItemsService {
     return item;
   }
 
+  async resolveScanCode(rawCode: string) {
+    const code = decodeURIComponent(rawCode).trim();
+    if (!code) throw new NotFoundException("条码为空");
+    const item = await this.prisma.item.findFirst({
+      where: {
+        deletedAt: null,
+        status: "ACTIVE",
+        OR: [
+          { itemCode: { equals: code, mode: "insensitive" } },
+          { barcode: code },
+        ],
+      },
+    });
+    if (!item) throw new NotFoundException(`未识别条码或SKU：${code}`);
+    return item;
+  }
+
   async findByCode(code: string) {
     return this.prisma.item.findUnique({ where: { itemCode: code } });
   }
 
   async create(dto: CreateItemDto) {
-    const existing = await this.prisma.item.findUnique({
-      where: { itemCode: dto.itemCode },
+    const barcode = dto.barcode?.trim() || undefined;
+    const existing = await this.prisma.item.findFirst({
+      where: {
+        OR: [
+          { itemCode: dto.itemCode },
+          ...(barcode ? [{ barcode }] : []),
+        ],
+      },
     });
-    if (existing)
-      throw new ConflictException(`物料编码 ${dto.itemCode} 已存在`);
-    return this.prisma.item.create({ data: dto as any });
+    if (existing) throw new ConflictException("物料编码或条码已存在");
+    return this.prisma.item.create({ data: { ...(dto as any), barcode } });
   }
 
   async update(id: string, dto: UpdateItemDto) {
     const item = await this.prisma.item.findUnique({ where: { id } });
     if (!item) throw new NotFoundException("物料不存在");
-    if (dto.itemCode && dto.itemCode !== item.itemCode) {
-      const dup = await this.prisma.item.findUnique({
-        where: { itemCode: dto.itemCode },
+    const barcode = (dto as any).barcode?.trim() || null;
+    if (dto.itemCode !== undefined || (dto as any).barcode !== undefined) {
+      const duplicate = await this.prisma.item.findFirst({
+        where: {
+          id: { not: id },
+          OR: [
+            ...(dto.itemCode ? [{ itemCode: dto.itemCode }] : []),
+            ...(barcode ? [{ barcode }] : []),
+          ],
+        },
       });
-      if (dup) throw new ConflictException(`物料编码 ${dto.itemCode} 已存在`);
+      if (duplicate) throw new ConflictException("物料编码或条码已存在");
     }
-    return this.prisma.item.update({ where: { id }, data: dto as any });
+    return this.prisma.item.update({
+      where: { id },
+      data: { ...(dto as any), ...((dto as any).barcode !== undefined ? { barcode } : {}) },
+    });
   }
 
   async remove(id: string) {
     const item = await this.prisma.item.findUnique({ where: { id } });
     if (!item) throw new NotFoundException("物料不存在");
-    // check if there are any inventory balances or movements
     const [invCount, movCount] = await Promise.all([
       this.prisma.inventoryBalance.count({ where: { itemId: id } }),
       this.prisma.stockMovement.count({ where: { itemId: id } }),
     ]);
     if (invCount > 0 || movCount > 0) {
-      // soft delete / disable
       return this.prisma.item.update({
         where: { id },
         data: { status: "DISABLED", deletedAt: new Date() },
