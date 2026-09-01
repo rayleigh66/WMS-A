@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Warehouse, Database, ArrowDownLeft, ArrowUpRight,
-  SlidersHorizontal, History, Users, FileText, X, ScanLine,
+  SlidersHorizontal, History, Users, FileText, X, ScanLine, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
 import { canManageUsers, canViewLogs } from '../../auth/role';
@@ -9,6 +9,7 @@ import type { Role } from '../../types/api';
 
 const operatorNav = [
   { to: '/scanner', label: '扫码工作台', icon: ScanLine },
+  { to: '/counting', label: '库存盘点', icon: ClipboardCheck },
   { to: '/inventory', label: '库存查询', icon: Database },
   { to: '/movements', label: '库存流水', icon: History },
 ];
@@ -22,6 +23,7 @@ const viewerNav = [
 const managerNav = [
   { to: '/dashboard', label: '控制台', icon: LayoutDashboard },
   { to: '/scanner', label: '扫码工作台', icon: ScanLine },
+  { to: '/counting', label: '库存盘点', icon: ClipboardCheck },
   { to: '/inventory', label: '库存查询', icon: Database },
   { to: '/stock-in', label: '入库管理', icon: ArrowDownLeft },
   { to: '/stock-out', label: '出库管理', icon: ArrowUpRight },
