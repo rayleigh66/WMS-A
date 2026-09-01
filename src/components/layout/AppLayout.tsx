@@ -5,6 +5,8 @@ import { Header } from './Header';
 
 const pageTitles: Record<string, string> = {
   '/dashboard': '控制台',
+  '/scanner': '扫码工作台',
+  '/counting': '库存盘点',
   '/items': '物料管理',
   '/warehouses': '仓库管理',
   '/locations': '库位管理',
