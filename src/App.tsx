@@ -5,6 +5,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ScannerPage from './pages/ScannerPage';
+import CountingPage from './pages/CountingPage';
 import ItemsPage from './pages/ItemsPage';
 import WarehousesPage from './pages/WarehousesPage';
 import LocationsPage from './pages/LocationsPage';
@@ -29,6 +30,7 @@ export default function App() {
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<RoleRoute allowed={[...ALL_ROLES]}><DashboardPage /></RoleRoute>} />
             <Route path="/scanner" element={<RoleRoute allowed={[...OPERATION_ROLES]}><ScannerPage /></RoleRoute>} />
+            <Route path="/counting" element={<RoleRoute allowed={[...OPERATION_ROLES]}><CountingPage /></RoleRoute>} />
             <Route path="/inventory" element={<RoleRoute allowed={[...ALL_ROLES]}><InventoryPage /></RoleRoute>} />
             <Route path="/movements" element={<RoleRoute allowed={[...ALL_ROLES]}><MovementsPage /></RoleRoute>} />
 
